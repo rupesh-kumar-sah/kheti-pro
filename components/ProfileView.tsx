@@ -86,6 +86,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
         setShowBiometricModal(false);
         // Generate a unique Biometric ID for this user session
         const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Simulating hardware secure storage
+        localStorage.setItem('khetismart_device_biometric_id', uniqueBioId);
+
         const updated = { 
           ...formData, 
           biometricLogin: true,
@@ -96,6 +100,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
       }, 2000);
     } else {
       // Turning OFF: Remove the ID and flag
+      
+      // Remove credential from device
+      localStorage.removeItem('khetismart_device_biometric_id');
+
       const updated = { 
         ...formData, 
         biometricLogin: false,

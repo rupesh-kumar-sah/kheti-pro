@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import HomeView from './components/HomeView';
@@ -10,44 +9,77 @@ import LoginView from './components/LoginView';
 import FarmingView from './components/FarmingView';
 import { ViewState, UserProfile } from './types';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewState>('home');
-  const [currentUserId, setCurrentUserId] = useState<string>(''); // Phone number serves as ID
-  const [isChatOpen, setIsChatOpen] = useState(false); // Chat Overlay State
+// Helper for safe JSON parsing
+function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
+  if (!jsonString) return fallback;
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("JSON Parse Error in App:", e);
+    return fallback;
+  }
+}
 
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    // Default placeholder state
-    name: 'Farmer',
-    location: 'Nepal',
-    experienceYears: 0,
-    crops: [],
-    darkMode: false,
-    biometricLogin: false,
-    preferences: {
-      weatherAlerts: true,
-      marketPrices: true,
-      schemeUpdates: false,
-      dailyTips: true
-    }
+const DEFAULT_PROFILE: UserProfile = {
+  name: 'Farmer',
+  location: 'Nepal',
+  experienceYears: 0,
+  crops: [],
+  darkMode: false,
+  biometricLogin: false,
+  preferences: {
+    weatherAlerts: true,
+    marketPrices: true,
+    schemeUpdates: false,
+    dailyTips: true
+  }
+};
+
+function App() {
+  const [currentView, setCurrentView] = useState<ViewState>('home');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Lazy initialization to synchronously read storage before render
+  // This prevents the "flash" of light mode if dark mode is saved.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const session = localStorage.getItem('khetismart_session');
+      if (session) {
+        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
+        if (parsedSession && parsedSession.phone) return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
   });
 
-  // Check for active session on load
-  useEffect(() => {
-    const session = localStorage.getItem('khetismart_session');
-    if (session) {
-      const { phone } = JSON.parse(session);
-      const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
-      const user = users[phone];
-      if (user) {
-        setUserProfile(user.profile);
-        setCurrentUserId(phone);
-        setIsAuthenticated(true);
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+     try {
+      const session = localStorage.getItem('khetismart_session');
+      if (session) {
+        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
+        return parsedSession?.phone || '';
       }
-    }
-  }, []);
+    } catch (e) { console.error(e); }
+    return '';
+  });
 
-  // Handle Dark Mode changes when profile updates
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    try {
+      const session = localStorage.getItem('khetismart_session');
+      if (session) {
+        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
+        if (parsedSession && parsedSession.phone) {
+          const users = safeJsonParse(localStorage.getItem('khetismart_users'), {});
+          if (users[parsedSession.phone]) {
+            return users[parsedSession.phone].profile;
+          }
+        }
+      }
+    } catch (e) { console.error(e); }
+    return DEFAULT_PROFILE;
+  });
+
+  // Effect to apply dark mode class based on state
   useEffect(() => {
     if (userProfile.darkMode) {
       document.documentElement.classList.add('dark');
@@ -62,7 +94,7 @@ function App() {
     
     // Update the record in localStorage using currentUserId
     if (currentUserId) {
-      const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+      const users = safeJsonParse(localStorage.getItem('khetismart_users'), {});
       if (users[currentUserId]) {
         users[currentUserId].profile = updatedProfile;
         localStorage.setItem('khetismart_users', JSON.stringify(users));
@@ -83,22 +115,7 @@ function App() {
     localStorage.removeItem('khetismart_session');
     setIsAuthenticated(false);
     setCurrentUserId('');
-    // Clear user profile to defaults to ensure no data leakage in state
-    setUserProfile({
-      name: 'Farmer',
-      location: 'Nepal',
-      experienceYears: 0,
-      crops: [],
-      darkMode: false,
-      biometricLogin: false,
-      preferences: {
-        weatherAlerts: true,
-        marketPrices: true,
-        schemeUpdates: false,
-        dailyTips: true
-      }
-    });
-    // Remove dark mode class if default is false (optional, but cleaner)
+    setUserProfile(DEFAULT_PROFILE);
     document.documentElement.classList.remove('dark');
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import WeatherCard from './WeatherCard';
@@ -27,13 +26,19 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat }) => {
         setTasks(JSON.parse(savedTasks));
       } catch (e) {
         console.error('Error parsing tasks', e);
+        // Reset corrupt data
+        localStorage.removeItem('khetismart_tasks');
       }
     }
   }, []);
 
   const saveTasks = (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
-    localStorage.setItem('khetismart_tasks', JSON.stringify(updatedTasks));
+    try {
+      localStorage.setItem('khetismart_tasks', JSON.stringify(updatedTasks));
+    } catch (e) {
+      console.error('Storage full or error', e);
+    }
   };
 
   const handleAddTask = () => {

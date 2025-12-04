@@ -19,6 +19,17 @@ const CACHE_DURATION = {
   PREDICTION: 6 * 60 * 60 * 1000 // 6 Hours
 };
 
+// Helper for safe JSON parsing
+const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
+  if (!jsonString) return fallback;
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("JSON Parse Error:", e);
+    return fallback;
+  }
+};
+
 // Helper to encode image file to base64
 export const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
   return new Promise((resolve, reject) => {
@@ -110,10 +121,11 @@ export const getMarketPrediction = async (cropName: string): Promise<string> => 
   // Check Cache
   const cacheKey = `${CACHE_KEYS.PREDICTION_PREFIX}${cropName}`;
   const cached = localStorage.getItem(cacheKey);
+  
   if (cached) {
-    const { timestamp, data } = JSON.parse(cached);
-    if (Date.now() - timestamp < CACHE_DURATION.PREDICTION) {
-      return data;
+    const parsed = safeJsonParse(cached, null) as { timestamp: number; data: string } | null;
+    if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION.PREDICTION) {
+      return parsed.data;
     }
   }
 
@@ -142,9 +154,9 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
   if (!forceRefresh) {
     const cached = localStorage.getItem(CACHE_KEYS.MARKET_PRICES);
     if (cached) {
-      const { timestamp, data } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION.MARKET) {
-        return data;
+      const parsed = safeJsonParse(cached, null) as { timestamp: number; data: { items: MarketItem[], sources: any[] } } | null;
+      if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION.MARKET) {
+        return parsed.data;
       }
     }
   }
@@ -190,8 +202,8 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
     
     // Attempt to extract JSON from the response
     try {
-      // Remove any markdown code blocks if present
-      const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      // Remove any markdown code blocks if present (case insensitive)
+      const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
       const start = cleanText.indexOf('[');
       const end = cleanText.lastIndexOf(']');
       
@@ -231,10 +243,11 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
   // Check Cache
   const cacheKey = `${CACHE_KEYS.HISTORY_PREFIX}${cropName}`;
   const cached = localStorage.getItem(cacheKey);
+  
   if (cached) {
-    const { timestamp, data } = JSON.parse(cached);
-    if (Date.now() - timestamp < CACHE_DURATION.HISTORY) {
-      return data;
+    const parsed = safeJsonParse(cached, null) as { timestamp: number; data: HistoricalPrice[] } | null;
+    if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION.HISTORY) {
+      return parsed.data;
     }
   }
 
@@ -259,7 +272,7 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
     let history: HistoricalPrice[] = [];
 
     try {
-      const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
       const start = cleanText.indexOf('[');
       const end = cleanText.lastIndexOf(']');
       

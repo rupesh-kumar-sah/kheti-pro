@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sprout, Phone, Lock, User, ArrowRight, Fingerprint, Loader2, Eye, EyeOff } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -24,17 +23,26 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
   useEffect(() => {
-    // Check if a previous user has enabled biometric login WITH a valid ID
-    const lastUserPhone = localStorage.getItem('khetismart_last_user');
-    if (lastUserPhone) {
-      const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
-      const user = users[lastUserPhone];
-      // STRICT check: User must have biometricLogin=true AND a stored biometricId
-      if (user && user.profile.biometricLogin && user.profile.biometricId) {
-        setCanUseBiometric(true);
-        // Pre-fill phone for convenience
-        setPhone(lastUserPhone);
+    try {
+      // Check if a previous user has enabled biometric login WITH a valid ID
+      const lastUserPhone = localStorage.getItem('khetismart_last_user');
+      if (lastUserPhone) {
+        const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+        const user = users[lastUserPhone];
+        
+        const deviceBioId = localStorage.getItem('khetismart_device_biometric_id');
+
+        // STRICT check: User must have biometricLogin=true AND a stored biometricId that matches device
+        if (user && user.profile.biometricLogin && user.profile.biometricId && user.profile.biometricId === deviceBioId) {
+          setCanUseBiometric(true);
+          // Pre-fill phone for convenience
+          setPhone(lastUserPhone);
+        }
       }
+    } catch (e) {
+      console.error("Error initializing login view:", e);
+      // Fallback safe state
+      setCanUseBiometric(false);
     }
   }, []);
 
@@ -43,21 +51,27 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     setError('');
     // Simulate biometric scan delay & ID verification
     setTimeout(() => {
-      const lastUserPhone = localStorage.getItem('khetismart_last_user');
-      if (lastUserPhone) {
-        const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
-        const user = users[lastUserPhone];
-        
-        // Verify the ID still exists in the user record (simulating secure enclave check)
-        if (user && user.profile.biometricId) {
-          // Success: The biometric ID matches the user account
-          onLogin(user.profile, lastUserPhone);
+      try {
+        const lastUserPhone = localStorage.getItem('khetismart_last_user');
+        if (lastUserPhone) {
+          const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+          const user = users[lastUserPhone];
+          const deviceBioId = localStorage.getItem('khetismart_device_biometric_id');
+          
+          // Verify the ID still exists in the user record (simulating secure enclave check)
+          if (user && user.profile.biometricId && user.profile.biometricId === deviceBioId) {
+            // Success: The biometric ID matches the user account
+            onLogin(user.profile, lastUserPhone);
+          } else {
+              setError("Biometric verification failed. ID mismatch.");
+              setIsBiometricLoading(false);
+          }
         } else {
-            setError("Biometric ID not recognized. Please use password.");
-            setIsBiometricLoading(false);
+          setError("No biometric data found.");
+          setIsBiometricLoading(false);
         }
-      } else {
-        setError("No biometric data found.");
+      } catch (e) {
+        setError("Login data corrupted. Please log in manually.");
         setIsBiometricLoading(false);
       }
     }, 1500);
@@ -69,61 +83,67 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     setLoading(true);
 
     setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+      try {
+        const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
 
-      if (isLogin) {
-        // LOGIN LOGIC
-        const user = users[phone];
-        
-        if (user && user.password === password) {
-          // Success
-          localStorage.setItem('khetismart_last_user', phone);
-          onLogin(user.profile, phone);
-        } else {
-          setError('Invalid phone number or password');
-          setLoading(false);
-        }
-      } else {
-        // SIGN UP LOGIC
-        if (users[phone]) {
-          setError('User already exists with this phone number');
-          setLoading(false);
-          return;
-        }
-
-        if (!name.trim() || !phone.trim() || !password.trim()) {
-           setError('Please fill in all fields');
-           setLoading(false);
-           return;
-        }
-
-        const newProfile: UserProfile = {
-          name: name,
-          location: location || 'Nepal',
-          experienceYears: 0,
-          crops: [],
-          darkMode: false,
-          biometricLogin: false,
-          // biometricId is undefined by default for new users
-          preferences: {
-            weatherAlerts: true,
-            marketPrices: true,
-            schemeUpdates: true,
-            dailyTips: true
+        if (isLogin) {
+          // LOGIN LOGIC
+          const user = users[phone];
+          
+          if (user && user.password === password) {
+            // Success
+            localStorage.setItem('khetismart_last_user', phone);
+            onLogin(user.profile, phone);
+          } else {
+            setError('Invalid phone number or password');
+            setLoading(false);
           }
-        };
+        } else {
+          // SIGN UP LOGIC
+          if (users[phone]) {
+            setError('User already exists with this phone number');
+            setLoading(false);
+            return;
+          }
 
-        const newUser = {
-          password: password,
-          profile: newProfile
-        };
+          if (!name.trim() || !phone.trim() || !password.trim()) {
+             setError('Please fill in all fields');
+             setLoading(false);
+             return;
+          }
 
-        // Save to storage
-        users[phone] = newUser;
-        localStorage.setItem('khetismart_users', JSON.stringify(users));
-        localStorage.setItem('khetismart_last_user', phone);
+          const newProfile: UserProfile = {
+            name: name,
+            location: location || 'Nepal',
+            experienceYears: 0,
+            crops: [],
+            darkMode: false,
+            biometricLogin: false,
+            // biometricId is undefined by default for new users
+            preferences: {
+              weatherAlerts: true,
+              marketPrices: true,
+              schemeUpdates: true,
+              dailyTips: true
+            }
+          };
 
-        onLogin(newProfile, phone);
+          const newUser = {
+            password: password,
+            profile: newProfile
+          };
+
+          // Save to storage
+          users[phone] = newUser;
+          localStorage.setItem('khetismart_users', JSON.stringify(users));
+          localStorage.setItem('khetismart_last_user', phone);
+
+          onLogin(newProfile, phone);
+        }
+      } catch (e) {
+         console.error("Login error", e);
+         setError("An unexpected error occurred. Please clear your cache and try again.");
+         setLoading(false);
       }
     }, 1000);
   };

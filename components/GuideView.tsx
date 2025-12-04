@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createChatSession } from '../services/geminiService';
 import { ChatMessage, LoadingState } from '../types';
@@ -54,8 +53,12 @@ const GuideView: React.FC<GuideViewProps> = ({ userId, onClose }) => {
   // Save history on change
   useEffect(() => {
     if (hasLoaded && userId && messages.length > 0) {
-      const storageKey = `khetismart_chat_history_${userId}`;
-      localStorage.setItem(storageKey, JSON.stringify(messages));
+      try {
+        const storageKey = `khetismart_chat_history_${userId}`;
+        localStorage.setItem(storageKey, JSON.stringify(messages));
+      } catch (e) {
+        console.error("Failed to save chat history", e);
+      }
     }
   }, [messages, userId, hasLoaded]);
 

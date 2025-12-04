@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeCropHealth } from '../services/geminiService';
 import { DiagnosisRecord } from '../types';
@@ -36,6 +35,7 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
       }
     } catch (e) {
       console.error("Failed to load history", e);
+      setHistory([]);
     }
   }, [userId]);
 
