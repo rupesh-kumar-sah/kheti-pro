@@ -1,7 +1,9 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { MarketItem, HistoricalPrice } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Ensure we don't crash if process.env is undefined (Vite/Browser edge cases)
+const API_KEY = process.env.API_KEY || '';
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Using Gemini 2.5 Flash for maximum speed and responsiveness
 const MODEL_FAST = 'gemini-2.5-flash';
@@ -23,7 +25,8 @@ const CACHE_DURATION = {
 const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   if (!jsonString) return fallback;
   try {
-    return JSON.parse(jsonString);
+    const res = JSON.parse(jsonString);
+    return res === null ? fallback : res;
   } catch (e) {
     console.error("JSON Parse Error:", e);
     return fallback;
@@ -203,7 +206,9 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
     // Attempt to extract JSON from the response
     try {
       // Remove any markdown code blocks if present (case insensitive)
-      const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      // Handles ```json, ```JSON, or just ```
+      const cleanText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
+      
       const start = cleanText.indexOf('[');
       const end = cleanText.lastIndexOf(']');
       
@@ -272,7 +277,7 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
     let history: HistoricalPrice[] = [];
 
     try {
-      const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const cleanText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
       const start = cleanText.indexOf('[');
       const end = cleanText.lastIndexOf(']');
       

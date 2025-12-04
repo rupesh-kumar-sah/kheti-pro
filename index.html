@@ -12,6 +12,9 @@
     <link rel="manifest" href="/manifest.json" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Polyfill process for browser environments (Vercel/Vite) to prevent crash
+      window.process = window.process || { env: { API_KEY: '' } };
+      
       tailwind.config = {
         darkMode: 'class',
         theme: {

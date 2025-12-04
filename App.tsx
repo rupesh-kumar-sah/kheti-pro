@@ -13,7 +13,9 @@ import { ViewState, UserProfile } from './types';
 function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
   if (!jsonString) return fallback;
   try {
-    return JSON.parse(jsonString);
+    const result = JSON.parse(jsonString);
+    // JSON.parse("null") returns null, which is technically a value but likely not what we want for state objects
+    return result === null ? fallback : result;
   } catch (e) {
     console.error("JSON Parse Error in App:", e);
     return fallback;
@@ -69,8 +71,10 @@ function App() {
       if (session) {
         const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
         if (parsedSession && parsedSession.phone) {
+          // Fallback to {} to allow safe indexing
           const users = safeJsonParse(localStorage.getItem('khetismart_users'), {});
-          if (users[parsedSession.phone]) {
+          // Use optional chaining to safely access .profile
+          if (users && users[parsedSession.phone]?.profile) {
             return users[parsedSession.phone].profile;
           }
         }
