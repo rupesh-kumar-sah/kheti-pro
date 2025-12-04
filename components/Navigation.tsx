@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ViewState } from '../types';
-import { Home, TrendingUp, Camera, MessageCircle, User } from 'lucide-react';
+import { Home, TrendingUp, Camera, User, BookOpen } from 'lucide-react';
 
 interface NavigationProps {
   currentView: ViewState;
@@ -11,14 +11,14 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
+    { id: 'farming', label: 'Farming', icon: BookOpen },
     { id: 'market', label: 'Market', icon: TrendingUp },
     { id: 'doctor', label: 'Doctor', icon: Camera },
-    { id: 'guide', label: 'Guide', icon: MessageCircle },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg pb-safe z-50 transition-colors duration-300">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg pb-safe z-40 transition-colors duration-300">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sprout, Phone, Lock, User, ArrowRight, Fingerprint, Loader2, Eye, EyeOff } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -20,14 +21,16 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   
   // Biometric State
   const [canUseBiometric, setCanUseBiometric] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
   useEffect(() => {
-    // Check if a previous user has enabled biometric login
+    // Check if a previous user has enabled biometric login WITH a valid ID
     const lastUserPhone = localStorage.getItem('khetismart_last_user');
     if (lastUserPhone) {
       const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
       const user = users[lastUserPhone];
-      if (user && user.profile.biometricLogin) {
+      // STRICT check: User must have biometricLogin=true AND a stored biometricId
+      if (user && user.profile.biometricLogin && user.profile.biometricId) {
         setCanUseBiometric(true);
         // Pre-fill phone for convenience
         setPhone(lastUserPhone);
@@ -36,22 +39,26 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   }, []);
 
   const handleBiometricLogin = () => {
-    setLoading(true);
-    // Simulate biometric scan delay
+    setIsBiometricLoading(true);
+    setError('');
+    // Simulate biometric scan delay & ID verification
     setTimeout(() => {
       const lastUserPhone = localStorage.getItem('khetismart_last_user');
       if (lastUserPhone) {
         const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
         const user = users[lastUserPhone];
-        if (user) {
+        
+        // Verify the ID still exists in the user record (simulating secure enclave check)
+        if (user && user.profile.biometricId) {
+          // Success: The biometric ID matches the user account
           onLogin(user.profile, lastUserPhone);
         } else {
-            setError("Biometric login failed. Please use password.");
-            setLoading(false);
+            setError("Biometric ID not recognized. Please use password.");
+            setIsBiometricLoading(false);
         }
       } else {
         setError("No biometric data found.");
-        setLoading(false);
+        setIsBiometricLoading(false);
       }
     }, 1500);
   };
@@ -97,6 +104,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           crops: [],
           darkMode: false,
           biometricLogin: false,
+          // biometricId is undefined by default for new users
           preferences: {
             weatherAlerts: true,
             marketPrices: true,
@@ -141,10 +149,15 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
            {isLogin && canUseBiometric && (
              <button 
                 onClick={handleBiometricLogin}
-                className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition border border-emerald-100 dark:border-emerald-800"
+                disabled={isBiometricLoading}
+                className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition border border-emerald-100 dark:border-emerald-800 relative overflow-hidden group"
                 title="Login with Biometrics"
              >
-                <Fingerprint size={24} />
+                {isBiometricLoading ? (
+                    <Loader2 size={24} className="animate-spin" />
+                ) : (
+                    <Fingerprint size={24} className="group-hover:scale-110 transition-transform" />
+                )}
              </button>
            )}
         </div>
@@ -234,7 +247,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isBiometricLoading}
             className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-emerald-600 hover:shadow-emerald-200 dark:hover:shadow-none transition-all flex items-center justify-center gap-2 group"
           >
             {loading ? (

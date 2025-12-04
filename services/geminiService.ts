@@ -1,10 +1,10 @@
-
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { MarketItem, HistoricalPrice } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const MODEL_FLASH = 'gemini-2.5-flash';
+// Using Gemini 2.5 Flash for maximum speed and responsiveness
+const MODEL_FAST = 'gemini-2.5-flash';
 
 // Cache Configuration
 const CACHE_KEYS = {
@@ -42,7 +42,7 @@ export const fileToGenerativePart = async (file: File): Promise<{ inlineData: { 
 export const getFarmingAdvice = async (prompt: string): Promise<string> => {
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODEL_FLASH,
+      model: MODEL_FAST,
       contents: prompt,
       config: {
         systemInstruction: "You are an expert agricultural consultant for Nepal named 'KhetiSmart Assistant'. Provide concise, practical advice for farmers in the Kathmandu Valley region. Use simple language.",
@@ -55,12 +55,42 @@ export const getFarmingAdvice = async (prompt: string): Promise<string> => {
   }
 };
 
+export const getFarmingGuide = async (cropName: string): Promise<string> => {
+  try {
+    const prompt = `
+      Provide a detailed, step-by-step farming guide for "${cropName}" specifically for Nepal.
+      
+      You MUST write the response in **Nepali language** (Devanagari script).
+      
+      Include the following sections clearly:
+      1. Suitable Season (उपयुक्त मौसम) & Time (समय)
+      2. Weather & Climate Requirements (हावापानी)
+      3. Soil Preparation (जमिनको तयारी)
+      4. Sowing Method (रोप्ने तरिका)
+      5. Irrigation & Fertilizer (सिँचाइ र मलखाद)
+      6. Harvesting (बाली भित्र्याउने)
+      
+      Format using Markdown with bold headings. Keep it practical and easy for a farmer to understand.
+    `;
+
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: MODEL_FAST,
+      contents: prompt,
+    });
+
+    return response.text || "माफ गर्नुहोस्, जानकारी उपलब्ध हुन सकेन।";
+  } catch (error) {
+    console.error("Error generating farming guide:", error);
+    return "प्राविधिक समस्याको कारण जानकारी लोड गर्न सकिएन। कृपया पुनः प्रयास गर्नुहोस्।";
+  }
+};
+
 export const analyzeCropHealth = async (imageFile: File): Promise<string> => {
   try {
     const imagePart = await fileToGenerativePart(imageFile);
     
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODEL_FLASH,
+      model: MODEL_FAST,
       contents: {
         parts: [
           imagePart,
@@ -89,7 +119,7 @@ export const getMarketPrediction = async (cropName: string): Promise<string> => 
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODEL_FLASH,
+      model: MODEL_FAST,
       contents: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).`,
     });
     const prediction = response.text || "Prediction unavailable.";
@@ -148,7 +178,7 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
     `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODEL_FLASH,
+      model: MODEL_FAST,
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -218,7 +248,7 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
     `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: MODEL_FLASH,
+      model: MODEL_FAST,
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -258,9 +288,10 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
 
 export const createChatSession = (): Chat => {
   return ai.chats.create({
-    model: MODEL_FLASH,
+    model: MODEL_FAST,
     config: {
-      systemInstruction: "You are a helpful farming assistant for Nepali farmers. You speak English but understand Nepali context (crops, seasons like Monsoon, Dashain). Keep answers helpful and encouraging.",
+      systemInstruction: "You are a helpful farming assistant for Nepali farmers. You speak English but understand Nepali context (crops, seasons like Monsoon, Dashain). Keep answers helpful, short, and encouraging.",
+      tools: [{ googleSearch: {} }],
     }
   });
 };

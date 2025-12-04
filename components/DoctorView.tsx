@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeCropHealth } from '../services/geminiService';
 import { DiagnosisRecord } from '../types';
-import { Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, History, Calendar, ChevronRight, Trash2, ArrowLeft, Edit3, Save } from 'lucide-react';
+import { Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, History, Calendar, ChevronRight, Trash2, ArrowLeft, Edit3, Save, Download } from 'lucide-react';
 
 interface DoctorViewProps {
   userId: string;
@@ -12,13 +13,13 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<DiagnosisRecord[]>([]);
   
-  // Editing State
+  // Editing & Saving State
   const [currentDiagnosisId, setCurrentDiagnosisId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedAnalysis, setEditedAnalysis] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +46,7 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
        localStorage.setItem(storageKey, JSON.stringify(newHistory));
     } catch (e) {
        console.error("Failed to save history - quota may be exceeded", e);
+       alert("Storage full. Please delete some old diagnoses.");
     }
   };
 
@@ -62,8 +64,10 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
       const updatedHistory = [newRecord, ...history].slice(0, 5);
       setHistory(updatedHistory);
       saveToLocalStorage(updatedHistory);
+      return id;
     } catch (e) {
       console.error("Failed to save diagnosis", e);
+      return null;
     }
   };
 
@@ -101,6 +105,7 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
       setAnalysis(null);
       setCurrentDiagnosisId(null);
       setIsEditing(false);
+      setIsSaved(false);
     }
   };
 
@@ -110,12 +115,20 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
     const result = await analyzeCropHealth(imageFile);
     setAnalysis(result);
     
-    // Save immediately and set as current for editing
-    const newId = Date.now().toString();
-    saveDiagnosis(selectedImage, result, newId);
-    setCurrentDiagnosisId(newId);
+    // Do not auto-save. Wait for user action.
+    setCurrentDiagnosisId(null);
+    setIsSaved(false);
     
     setLoading(false);
+  };
+
+  const handleManualSave = () => {
+    if (!selectedImage || !analysis) return;
+    const newId = saveDiagnosis(selectedImage, analysis);
+    if (newId) {
+      setCurrentDiagnosisId(newId);
+      setIsSaved(true);
+    }
   };
 
   const clearImage = () => {
@@ -124,6 +137,7 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
     setAnalysis(null);
     setCurrentDiagnosisId(null);
     setIsEditing(false);
+    setIsSaved(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -132,8 +146,10 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
     setAnalysis(item.analysis);
     setCurrentDiagnosisId(item.id);
     setImageFile(null); // No file object available for historical items
-    setShowHistory(false);
     setIsEditing(false);
+    setIsSaved(true);
+    // Scroll to top to see the loaded image
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleStartEdit = () => {
@@ -142,9 +158,16 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
   };
 
   const handleSaveEdit = () => {
-    if (currentDiagnosisId && editedAnalysis.trim()) {
+    if (editedAnalysis.trim()) {
       setAnalysis(editedAnalysis);
-      updateDiagnosis(currentDiagnosisId, editedAnalysis);
+      
+      // If it was already saved, update the record
+      if (currentDiagnosisId && isSaved) {
+        updateDiagnosis(currentDiagnosisId, editedAnalysis);
+      }
+      // If it wasn't saved yet, we just updated the current view state
+      // The user still needs to click "Save Analysis" to persist it as a new record
+      
       setIsEditing(false);
     }
   };
@@ -154,73 +177,10 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
     setEditedAnalysis('');
   };
 
-  if (showHistory) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 pt-6 px-4 transition-colors duration-300">
-        <div className="flex items-center gap-2 mb-6 px-2">
-          <button 
-            onClick={() => setShowHistory(false)}
-            className="p-2 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <h2 className="text-2xl font-bold text-secondary dark:text-emerald-400">Diagnosis History</h2>
-        </div>
-
-        <div className="space-y-4">
-          {history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-              <History size={48} className="mb-4 opacity-20" />
-              <p>No past diagnoses found.</p>
-            </div>
-          ) : (
-            history.map((item) => (
-              <div 
-                key={item.id}
-                onClick={() => loadHistoryItem(item)}
-                className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex gap-4 cursor-pointer hover:bg-emerald-50/30 dark:hover:bg-emerald-900/20 transition group"
-              >
-                <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                  <img src={item.imageUrl} alt="Crop" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      <Calendar size={12} />
-                      <span>{new Date(item.timestamp).toLocaleDateString()}</span>
-                    </div>
-                    <button 
-                      onClick={(e) => deleteHistoryItem(e, item.id)}
-                      className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
-                    {item.analysis.split('\n')[0] || "Analysis Report"}
-                  </p>
-                  <div className="flex items-center text-xs text-primary mt-2 font-medium">
-                    View Report <ChevronRight size={12} className="ml-0.5 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 pt-6 px-4 transition-colors duration-300">
       <div className="flex justify-between items-center mb-2 px-2">
         <h2 className="text-2xl font-bold text-secondary dark:text-emerald-400">Crop Doctor</h2>
-        <button 
-          onClick={() => setShowHistory(true)}
-          className="flex items-center gap-1.5 text-xs font-medium bg-white dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:border-primary transition"
-        >
-          <History size={14} /> History
-        </button>
       </div>
       <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 px-2">Take a photo of your crop to detect diseases.</p>
 
@@ -244,11 +204,11 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="relative rounded-2xl overflow-hidden shadow-md">
+          <div className="relative rounded-2xl overflow-hidden shadow-md group">
             <img src={selectedImage} alt="Crop" className="w-full h-64 object-cover" />
             <button 
               onClick={clearImage}
-              className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 backdrop-blur-sm"
+              className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X size={20} />
             </button>
@@ -279,14 +239,25 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
                   <AlertCircle className="text-accent" size={20} />
                   <h3 className="font-bold text-lg text-gray-800 dark:text-white">Diagnosis Report</h3>
                 </div>
-                {currentDiagnosisId && !isEditing && (
-                    <button 
-                        onClick={handleStartEdit}
-                        className="p-2 text-gray-500 hover:text-primary hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition"
-                        title="Edit Analysis"
-                    >
-                        <Edit3 size={18} />
-                    </button>
+                {!isEditing && (
+                    <div className="flex gap-2">
+                        {/* Save Button - Only show if not saved yet */}
+                        {!isSaved && (
+                            <button 
+                                onClick={handleManualSave}
+                                className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-800 transition"
+                            >
+                                <Download size={14} /> Save
+                            </button>
+                        )}
+                        <button 
+                            onClick={handleStartEdit}
+                            className="p-1.5 text-gray-500 hover:text-primary hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition"
+                            title="Edit Analysis"
+                        >
+                            <Edit3 size={18} />
+                        </button>
+                    </div>
                 )}
               </div>
               
@@ -309,7 +280,7 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
                               onClick={handleSaveEdit}
                               className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-emerald-600 transition flex items-center gap-1.5"
                           >
-                              <Save size={16} /> Save Changes
+                              <Save size={16} /> Done
                           </button>
                       </div>
                   </div>
@@ -322,6 +293,59 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
           )}
         </div>
       )}
+
+      {/* Inline History Section */}
+      <div className="mt-10 px-2">
+        <div className="flex items-center gap-2 mb-4">
+           <History size={18} className="text-gray-400" />
+           <h3 className="text-lg font-bold text-secondary dark:text-emerald-400">Recent Diagnoses</h3>
+        </div>
+
+        <div className="space-y-3">
+          {history.length === 0 ? (
+            <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+              <p className="text-gray-400 text-sm">No saved diagnoses yet.</p>
+            </div>
+          ) : (
+            history.map((item) => (
+              <div 
+                key={item.id}
+                onClick={() => loadHistoryItem(item)}
+                className={`bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border flex gap-4 cursor-pointer hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition group ${
+                    currentDiagnosisId === item.id 
+                    ? 'border-primary ring-1 ring-primary' 
+                    : 'border-gray-100 dark:border-gray-700'
+                }`}
+              >
+                <div className="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  <img src={item.imageUrl} alt="Crop" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      <Calendar size={12} />
+                      <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => deleteHistoryItem(e, item.id)}
+                      className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition"
+                      title="Delete"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
+                    {item.analysis.split('\n')[0] || "Analysis Report"}
+                  </p>
+                  <div className="flex items-center text-xs text-primary mt-1 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    View <ChevronRight size={12} className="ml-0.5" />
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 };

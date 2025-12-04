@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createChatSession } from '../services/geminiService';
 import { ChatMessage, LoadingState } from '../types';
-import { Send, User, Bot, Loader2, Trash2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, Trash2, X } from 'lucide-react';
 import { Chat, GenerateContentResponse } from "@google/genai";
 
 interface GuideViewProps {
   userId: string;
+  onClose: () => void;
 }
 
-const GuideView: React.FC<GuideViewProps> = ({ userId }) => {
+const GuideView: React.FC<GuideViewProps> = ({ userId, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -118,22 +120,39 @@ const GuideView: React.FC<GuideViewProps> = ({ userId }) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 p-4 shadow-sm z-10 flex justify-between items-center transition-colors duration-300">
-        <div>
-          <h2 className="text-xl font-bold text-secondary dark:text-emerald-400">Farming Guide</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Ask about crops, seasons, or fertilizers</p>
+        <div className="flex items-center gap-3">
+             <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-full">
+                 <Bot className="text-primary dark:text-emerald-400" size={24} />
+             </div>
+             <div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-white">Farming Guide</h2>
+                <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
+                </div>
+             </div>
         </div>
-        <button 
-          onClick={handleClearHistory}
-          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
-          title="Clear History"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div className="flex gap-2">
+            <button 
+              onClick={handleClearHistory}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
+              title="Clear History"
+            >
+              <Trash2 size={20} />
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+              title="Close"
+            >
+              <X size={24} />
+            </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
         {messages.map((msg) => (
           <div 
             key={msg.id} 

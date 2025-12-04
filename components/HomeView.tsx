@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import WeatherCard from './WeatherCard';
 import { ViewState } from '../types';
-import { TrendingUp, Camera, MessageCircle, Sprout, ChevronRight, Plus, Check, Trash2 } from 'lucide-react';
+import { TrendingUp, Camera, MessageCircle, Sprout, ChevronRight, Plus, Check, Trash2, Bot } from 'lucide-react';
 
 interface HomeViewProps {
   setView: (view: ViewState) => void;
+  onOpenChat: () => void;
 }
 
 interface Task {
@@ -15,7 +16,7 @@ interface Task {
   completed: boolean;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
+const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
 
@@ -89,7 +90,7 @@ const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
           </button>
 
           <button 
-            onClick={() => setView('guide')}
+            onClick={onOpenChat}
             className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300"
           >
             <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3">
@@ -200,6 +201,17 @@ const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
           )}
         </div>
       </div>
+
+      {/* Chat Floating Action Button */}
+      <button
+        onClick={onOpenChat}
+        className="fixed bottom-24 right-4 z-30 bg-secondary dark:bg-emerald-600 text-white p-3.5 rounded-full shadow-lg shadow-emerald-900/20 hover:scale-105 active:scale-95 transition-transform flex items-center gap-2 pr-5"
+      >
+        <div className="bg-white/20 p-1 rounded-full">
+            <Bot size={20} />
+        </div>
+        <span className="font-semibold text-sm">Ask AI</span>
+      </button>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-export type ViewState = 'home' | 'market' | 'doctor' | 'guide' | 'profile';
+export type ViewState = 'home' | 'farming' | 'market' | 'doctor' | 'guide' | 'profile';
 
 export interface WeatherData {
   temp: number;
@@ -50,7 +50,9 @@ export interface UserProfile {
   crops: string[];
   darkMode: boolean;
   biometricLogin: boolean;
+  biometricId?: string; // Unique ID for specific biometric credential
   preferences: NotificationPreferences;
+  profilePicture?: string;
 }
 
 export interface DiagnosisRecord {

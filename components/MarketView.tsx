@@ -268,6 +268,13 @@ const MarketView: React.FC = () => {
     return priceNpr;
   };
 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+  };
+
+  const isFiltered = searchQuery !== '' || selectedCategory !== 'All';
+
   const categories = ['All', 'Vegetable', 'Fruit', 'Grain', 'Spice'];
 
   const currencySymbol = currency === 'NPR' ? 'Rs.' : '$';
@@ -304,23 +311,37 @@ const MarketView: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-3 px-2 relative">
-        <input 
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search food, veg, fruit (e.g., Rice, Apple)..."
-          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors"
-        />
-        <Search className="absolute left-5 top-3.5 text-gray-400" size={18} />
-        {searchQuery && (
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >
-            <X size={16} />
-          </button>
+      {/* Search Bar & Reset Button */}
+      <div className="mb-3 px-2 flex gap-2">
+        <div className="relative flex-1">
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search food, veg, fruit..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-gray-100 transition-colors shadow-sm"
+            />
+            <Search className="absolute left-3.5 top-3.5 text-gray-400" size={18} />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X size={16} />
+              </button>
+            )}
+        </div>
+
+        {isFiltered && (
+            <button 
+                onClick={handleResetFilters}
+                className="bg-white dark:bg-gray-800 text-red-500 border border-red-100 dark:border-red-900/30 px-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-1 shadow-sm animate-in fade-in slide-in-from-right-4 duration-300"
+                title="Reset all filters"
+            >
+                <X size={16} />
+                <span className="text-sm font-semibold hidden sm:inline">Reset</span>
+                <span className="text-sm font-semibold sm:hidden">Clear</span>
+            </button>
         )}
       </div>
 
@@ -363,7 +384,7 @@ const MarketView: React.FC = () => {
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
            <p>No items found for "{searchQuery}" in {selectedCategory}</p>
            <button 
-              onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
+              onClick={handleResetFilters}
               className="text-primary text-sm mt-2 font-medium"
            >
              Clear filters

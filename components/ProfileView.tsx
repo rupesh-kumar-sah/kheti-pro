@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, NotificationPreferences } from '../types';
 import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronRight, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare } from 'lucide-react';
 
@@ -16,6 +16,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   const [expandedSchemeId, setExpandedSchemeId] = useState<number | null>(null);
   const [expandedFaqId, setExpandedFaqId] = useState<number | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync formData if profile changes from parent
   useEffect(() => {
@@ -77,11 +79,41 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   };
 
   const handleToggleBiometric = () => {
-    const updated = { ...formData, biometricLogin: !formData.biometricLogin };
-    setFormData(updated);
-    // If not editing, apply immediately
-    if (!isEditing) {
-      onUpdate(updated);
+    if (!formData.biometricLogin) {
+      // Turning ON: Show scan simulation to "save" biometrics
+      setShowBiometricModal(true);
+      setTimeout(() => {
+        setShowBiometricModal(false);
+        // Generate a unique Biometric ID for this user session
+        const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const updated = { 
+          ...formData, 
+          biometricLogin: true,
+          biometricId: uniqueBioId 
+        };
+        setFormData(updated);
+        if (!isEditing) onUpdate(updated);
+      }, 2000);
+    } else {
+      // Turning OFF: Remove the ID and flag
+      const updated = { 
+        ...formData, 
+        biometricLogin: false,
+        biometricId: undefined 
+      };
+      setFormData(updated);
+      if (!isEditing) onUpdate(updated);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, profilePicture: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -180,14 +212,31 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
             <div className="flex justify-between items-end mb-4">
                 <div className="relative">
                     <div className="w-28 h-28 bg-white dark:bg-gray-800 p-1 rounded-full shadow-lg transition-colors duration-300">
-                        <div className="w-full h-full bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                             <User size={48} />
+                        <div className="w-full h-full bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 overflow-hidden">
+                             {formData.profilePicture ? (
+                               <img src={formData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                             ) : (
+                               <User size={48} />
+                             )}
                         </div>
                     </div>
                     {isEditing && (
-                        <button className="absolute bottom-0 right-0 bg-secondary text-white p-2 rounded-full shadow-md hover:bg-emerald-800 transition" aria-label="Change profile picture">
-                            <Camera size={16} />
-                        </button>
+                        <>
+                          <button 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="absolute bottom-0 right-0 bg-secondary text-white p-2 rounded-full shadow-md hover:bg-emerald-800 transition" 
+                              aria-label="Change profile picture"
+                          >
+                              <Camera size={16} />
+                          </button>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                          />
+                        </>
                     )}
                 </div>
                 
@@ -585,6 +634,24 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                             Log Out
                         </button>
                     </div>
+                </div>
+            </div>
+        )}
+
+        {/* Biometric Setup Simulation Modal */}
+        {showBiometricModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 border border-gray-100 dark:border-gray-700">
+                    <div className="relative mb-6">
+                        <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-75"></div>
+                        <div className="bg-emerald-100 dark:bg-emerald-900/50 p-6 rounded-full relative z-10 text-primary dark:text-emerald-400">
+                            <Fingerprint size={48} strokeWidth={1.5} />
+                        </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Scanning Fingerprint</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
+                        Binding biometric credentials securely to your ID...
+                    </p>
                 </div>
             </div>
         )}
