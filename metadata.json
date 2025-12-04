@@ -1,0 +1,9 @@
+{
+  "name": "Copy of Copy of KhetiSmartjj",
+  "description": "A smart farming companion for Nepali farmers providing market insights, crop health analysis, and weather alerts powered by AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
