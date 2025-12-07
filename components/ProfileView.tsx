@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, NotificationPreferences } from '../types';
-import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronRight, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare } from 'lucide-react';
+import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare } from 'lucide-react';
 
 interface ProfileViewProps {
   profile: UserProfile;
@@ -84,16 +84,20 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
       setShowBiometricModal(true);
       setTimeout(() => {
         setShowBiometricModal(false);
-        // Generate a unique Biometric ID for this user session
+        // Generate a unique Biometric ID for this user session (Simulating a secure token)
         const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Simulating hardware secure storage
-        localStorage.setItem('khetismart_device_biometric_id', uniqueBioId);
+        // Simulating hardware secure storage on the device
+        try {
+          localStorage.setItem('khetismart_device_biometric_id', uniqueBioId);
+        } catch (e) {
+          console.error("Failed to save biometric ID to device", e);
+        }
 
         const updated = { 
           ...formData, 
           biometricLogin: true,
-          biometricId: uniqueBioId 
+          biometricId: uniqueBioId // Link this ID to the user profile
         };
         setFormData(updated);
         if (!isEditing) onUpdate(updated);

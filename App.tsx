@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import HomeView from './components/HomeView';
@@ -14,11 +15,17 @@ function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
   if (!jsonString) return fallback;
   try {
     const result = JSON.parse(jsonString);
-    // JSON.parse("null") returns null, which is technically a value but likely not what we want for state objects
     return result === null ? fallback : result;
   } catch (e) {
     console.error("JSON Parse Error in App:", e);
     return fallback;
+  }
+}
+
+interface UserMap {
+  [phone: string]: {
+    password?: string;
+    profile: UserProfile;
   }
 }
 
@@ -42,7 +49,6 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Lazy initialization to synchronously read storage before render
-  // This prevents the "flash" of light mode if dark mode is saved.
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       const session = localStorage.getItem('khetismart_session');
@@ -71,9 +77,7 @@ function App() {
       if (session) {
         const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
         if (parsedSession && parsedSession.phone) {
-          // Fallback to {} to allow safe indexing
-          const users = safeJsonParse(localStorage.getItem('khetismart_users'), {});
-          // Use optional chaining to safely access .profile
+          const users = safeJsonParse<UserMap>(localStorage.getItem('khetismart_users'), {});
           if (users && users[parsedSession.phone]?.profile) {
             return users[parsedSession.phone].profile;
           }
@@ -98,7 +102,7 @@ function App() {
     
     // Update the record in localStorage using currentUserId
     if (currentUserId) {
-      const users = safeJsonParse(localStorage.getItem('khetismart_users'), {});
+      const users = safeJsonParse<UserMap>(localStorage.getItem('khetismart_users'), {});
       if (users[currentUserId]) {
         users[currentUserId].profile = updatedProfile;
         localStorage.setItem('khetismart_users', JSON.stringify(users));

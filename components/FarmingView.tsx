@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Loader2, Sprout, CloudSun, Droplets, Calendar, BookOpen, ChevronRight } from 'lucide-react';
 import { getFarmingGuide } from '../services/geminiService';
@@ -8,14 +9,18 @@ const FarmingView: React.FC = () => {
   const [guide, setGuide] = useState<string | null>(null);
   const [searchedCrop, setSearchedCrop] = useState('');
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const handleSearch = async (term?: string) => {
+    const searchTerm = term || query;
+    if (!searchTerm.trim()) return;
     
+    // Update input if searched via suggestion
+    if (term) setQuery(term);
+
     setLoading(true);
     setGuide(null);
-    setSearchedCrop(query);
+    setSearchedCrop(searchTerm);
     
-    const result = await getFarmingGuide(query);
+    const result = await getFarmingGuide(searchTerm);
     setGuide(result);
     setLoading(false);
   };
@@ -50,7 +55,7 @@ const FarmingView: React.FC = () => {
         />
         <Search className="absolute left-4 top-4.5 text-gray-400" size={20} />
         <button 
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={loading || !query.trim()}
             className="absolute right-2 top-2 bg-primary text-white p-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
@@ -66,7 +71,7 @@ const FarmingView: React.FC = () => {
                 {commonCrops.map((crop) => (
                     <button
                         key={crop}
-                        onClick={() => { setQuery(crop.split(' ')[0]); handleSearch(); }}
+                        onClick={() => handleSearch(crop.split(' ')[0])}
                         className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition"
                     >
                         {crop}
