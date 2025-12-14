@@ -61,3 +61,12 @@ export interface DiagnosisRecord {
   analysis: string;
   timestamp: number;
 }
+
+export interface UserAccount {
+  password?: string;
+  profile: UserProfile;
+}
+
+export interface UserMap {
+  [phone: string]: UserAccount;
+}

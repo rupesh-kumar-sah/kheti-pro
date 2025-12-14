@@ -8,7 +8,7 @@ import GuideView from './components/GuideView';
 import ProfileView from './components/ProfileView';
 import LoginView from './components/LoginView';
 import FarmingView from './components/FarmingView';
-import { ViewState, UserProfile } from './types';
+import { ViewState, UserProfile, UserMap } from './types';
 
 // Helper for safe JSON parsing
 function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
@@ -19,13 +19,6 @@ function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
   } catch (e) {
     console.error("JSON Parse Error in App:", e);
     return fallback;
-  }
-}
-
-interface UserMap {
-  [phone: string]: {
-    password?: string;
-    profile: UserProfile;
   }
 }
 

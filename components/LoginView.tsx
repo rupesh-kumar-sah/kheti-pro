@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sprout, Phone, Lock, User, ArrowRight, Fingerprint, Loader2, Eye, EyeOff } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, UserMap } from '../types';
 
 interface LoginViewProps {
   onLogin: (profile: UserProfile, phone: string) => void;
@@ -28,7 +28,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       // Check if a previous user has enabled biometric login WITH a valid ID
       const lastUserPhone = localStorage.getItem('khetismart_last_user');
       if (lastUserPhone) {
-        const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+        const users: UserMap = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
         const user = users[lastUserPhone];
         
         const deviceBioId = localStorage.getItem('khetismart_device_biometric_id');
@@ -55,7 +55,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       try {
         const lastUserPhone = localStorage.getItem('khetismart_last_user');
         if (lastUserPhone) {
-          const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+          const users: UserMap = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
           const user = users[lastUserPhone];
           const deviceBioId = localStorage.getItem('khetismart_device_biometric_id');
           
@@ -85,7 +85,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
     setTimeout(() => {
       try {
-        const users = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
+        const users: UserMap = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
 
         if (isLogin) {
           // LOGIN LOGIC

@@ -27,6 +27,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   const handleSave = () => {
     // Prevent saving with empty name
     if (!formData.name.trim()) {
+      alert("Name is required!");
       return; 
     }
     onUpdate(formData);
@@ -85,7 +86,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
       setTimeout(() => {
         setShowBiometricModal(false);
         // Generate a unique Biometric ID for this user session (Simulating a secure token)
-        const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         
         // Simulating hardware secure storage on the device
         try {

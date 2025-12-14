@@ -1,8 +1,23 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 import { MarketItem, HistoricalPrice } from "../types";
 
-// Ensure we don't crash if process.env is undefined (Vite/Browser edge cases)
-const API_KEY = process.env.API_KEY || '';
+// Safer access to process.env to prevent "white screen" crashes in browser/Vite
+const getApiKey = () => {
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env.API_KEY || '';
+    }
+    // Fallback if window.process is polyfilled
+    if (typeof window !== 'undefined' && (window as any).process?.env) {
+      return (window as any).process.env.API_KEY || '';
+    }
+    return '';
+  } catch (e) {
+    return '';
+  }
+};
+
+const API_KEY = getApiKey();
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Using Gemini 2.5 Flash for maximum speed and responsiveness
@@ -189,7 +204,7 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
       1. Extract at least 50-70 items.
       2. Use the "Average" price.
       3. Classify each item into the correct category.
-      4. Output raw JSON only.
+      4. Output raw JSON only. Do not include markdown formatting or explanations.
     `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -203,18 +218,19 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
     let items: MarketItem[] = [];
     const text = response.text || "";
     
-    // Attempt to extract JSON from the response
+    // Attempt to extract JSON from the response robustly
     try {
-      // Remove any markdown code blocks if present (case insensitive)
-      // Handles ```json, ```JSON, or just ```
-      const cleanText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
-      
-      const start = cleanText.indexOf('[');
-      const end = cleanText.lastIndexOf(']');
+      // Find the first '[' and last ']' to handle extra text
+      const start = text.indexOf('[');
+      const end = text.lastIndexOf(']');
       
       if (start !== -1 && end !== -1) {
-        const jsonStr = cleanText.substring(start, end + 1);
+        const jsonStr = text.substring(start, end + 1);
         items = JSON.parse(jsonStr);
+      } else {
+         // Fallback cleaning if brackets aren't clear
+         const cleanText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
+         items = JSON.parse(cleanText);
       }
     } catch (e) {
       console.error("JSON Parse error:", e);
@@ -277,14 +293,12 @@ export const getHistoricalPrices = async (cropName: string): Promise<HistoricalP
     let history: HistoricalPrice[] = [];
 
     try {
-      const cleanText = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '').trim();
-      const start = cleanText.indexOf('[');
-      const end = cleanText.lastIndexOf(']');
-      
-      if (start !== -1 && end !== -1) {
-        const jsonStr = cleanText.substring(start, end + 1);
-        history = JSON.parse(jsonStr);
-      }
+       const start = text.indexOf('[');
+       const end = text.lastIndexOf(']');
+       if (start !== -1 && end !== -1) {
+          const jsonStr = text.substring(start, end + 1);
+          history = JSON.parse(jsonStr);
+       }
     } catch (e) {
       console.error("JSON Parse error (History):", e);
     }
