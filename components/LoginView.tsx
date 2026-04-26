@@ -85,19 +85,38 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    if (!phone.trim() || !password.trim() || (!isLogin && !name.trim())) {
+    const trimmedPhone = phone.trim();
+    const trimmedName = name.trim();
+
+    if (!trimmedPhone || !password || (!isLogin && !trimmedName)) {
       setError('Please fill in all fields');
       return;
+    }
+
+    if (!/^\d{10}$/.test(trimmedPhone)) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+
+    if (!isLogin) {
+      if (password.length !== 8) {
+        setError('Password must be exactly 8 characters');
+        return;
+      }
+      if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+        setError('Password must contain both letters and numbers');
+        return;
+      }
     }
 
     setLoading(true);
     try {
       const result = isLogin
-        ? await apiLogin({ phone: phone.trim(), password })
+        ? await apiLogin({ phone: trimmedPhone, password })
         : await apiSignup({
-            phone: phone.trim(),
+            phone: trimmedPhone,
             password,
-            name: name.trim(),
+            name: trimmedName,
             location: location.trim(),
           });
 
@@ -188,9 +207,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             <div className="relative">
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]{10}"
+                maxLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="9800000000"
+                autoComplete="tel"
                 className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition text-gray-900 dark:text-white"
                 required
               />
@@ -205,11 +228,18 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value.slice(0, 8))}
+                maxLength={8}
                 placeholder="••••••••"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
                 className="w-full pl-11 pr-12 py-3.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition text-gray-900 dark:text-white"
                 required
               />
+              {!isLogin && (
+                <p className="mt-1.5 ml-1 text-xs text-gray-500 dark:text-gray-400">
+                  Must be exactly 8 characters with letters and numbers
+                </p>
+              )}
               <Lock className="absolute left-4 top-3.5 text-gray-400" size={20} />
               <button 
                 type="button"

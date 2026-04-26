@@ -38,8 +38,14 @@ const DEFAULT_PROFILE = {
 function normalizePhone(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
-  if (!/^[0-9+]{6,20}$/.test(trimmed)) return null;
+  if (!/^\d{10}$/.test(trimmed)) return null;
   return trimmed;
+}
+
+function isValidPassword(raw: unknown): raw is string {
+  if (typeof raw !== 'string') return false;
+  if (raw.length !== 8) return false;
+  return /[A-Za-z]/.test(raw) && /\d/.test(raw);
 }
 
 function makeToken(phone: string): string {
@@ -77,10 +83,10 @@ app.post('/api/auth/signup', async (req: Request, res: Response) => {
     const location: string = (req.body?.location || '').toString().trim();
 
     if (!phone) {
-      return res.status(400).json({ error: 'Invalid phone number' });
+      return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
     }
-    if (!password || typeof password !== 'string' || password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ error: 'Password must be exactly 8 characters and contain both letters and numbers' });
     }
     if (!name) {
       return res.status(400).json({ error: 'Name is required' });
@@ -116,8 +122,11 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const phone = normalizePhone(req.body?.phone);
     const password: string = req.body?.password;
 
-    if (!phone || !password) {
-      return res.status(400).json({ error: 'Phone and password required' });
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
+    }
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password required' });
     }
 
     const result = await pool.query(
