@@ -1,0 +1,234 @@
+2026-04-26T21:23:48.544503667Z ==> Deploying...
+2026-04-26T21:23:48.620773827Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T21:24:00.064621395Z ==> Running 'npm run start'
+2026-04-26T21:24:01.074117771Z 
+2026-04-26T21:24:01.074150081Z > khetismart-pro-version@0.0.0 start
+2026-04-26T21:24:01.074154502Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T21:24:01.074157182Z 
+2026-04-26T21:24:07.26280181Z API listening on port 10000
+2026-04-26T21:24:07.263149928Z [security] SESSION_SECRET not set in env — generated a random one for this process. Set it in Replit Secrets to keep sessions valid across restarts.
+2026-04-26T21:24:09.927555133Z ==> Your service is live 🎉
+2026-04-26T21:24:10.24622055Z ==> 
+2026-04-26T21:24:10.249244498Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T21:24:10.251989308Z ==> 
+2026-04-26T21:24:10.254443131Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T21:24:10.257263246Z ==> 
+2026-04-26T21:24:10.260345998Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T21:24:40.464915181Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:24:40.545055031Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:24:40.545067491Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:24:40.545071972Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:24:40.545076332Z   code: 'ECONNREFUSED',
+2026-04-26T21:24:40.545080432Z   [errors]: [
+2026-04-26T21:24:40.545085312Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:24:40.545090312Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:24:40.545094462Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:24:40.545098282Z       errno: -111,
+2026-04-26T21:24:40.545102652Z       code: 'ECONNREFUSED',
+2026-04-26T21:24:40.545107072Z       syscall: 'connect',
+2026-04-26T21:24:40.545111642Z       address: '::1',
+2026-04-26T21:24:40.545115882Z       port: 5432
+2026-04-26T21:24:40.545120253Z     },
+2026-04-26T21:24:40.545124623Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:24:40.545129213Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:24:40.545133923Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:24:40.545138423Z       errno: -111,
+2026-04-26T21:24:40.545143243Z       code: 'ECONNREFUSED',
+2026-04-26T21:24:40.545147423Z       syscall: 'connect',
+2026-04-26T21:24:40.545151503Z       address: '127.0.0.1',
+2026-04-26T21:24:40.545155623Z       port: 5432
+2026-04-26T21:24:40.545159843Z     }
+2026-04-26T21:24:40.545164443Z   ]
+2026-04-26T21:24:40.545168824Z }
+2026-04-26T21:25:13.518815243Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:25:13.518841753Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:25:13.518846554Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:25:13.518849804Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:25:13.518853494Z   code: 'ECONNREFUSED',
+2026-04-26T21:25:13.518856844Z   [errors]: [
+2026-04-26T21:25:13.518861334Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:25:13.518866814Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:25:13.518871604Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:25:13.518876714Z       errno: -111,
+2026-04-26T21:25:13.518882034Z       code: 'ECONNREFUSED',
+2026-04-26T21:25:13.518887305Z       syscall: 'connect',
+2026-04-26T21:25:13.518891995Z       address: '::1',
+2026-04-26T21:25:13.518896735Z       port: 5432
+2026-04-26T21:25:13.518901245Z     },
+2026-04-26T21:25:13.518904345Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:25:13.518907415Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:25:13.518910455Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:25:13.518913595Z       errno: -111,
+2026-04-26T21:25:13.518916635Z       code: 'ECONNREFUSED',
+2026-04-26T21:25:13.518919625Z       syscall: 'connect',
+2026-04-26T21:25:13.518933846Z       address: '127.0.0.1',
+2026-04-26T21:25:13.518935986Z       port: 5432
+2026-04-26T21:25:13.518938006Z     }
+2026-04-26T21:25:13.518940006Z   ]
+2026-04-26T21:25:13.518941956Z }
+2026-04-26T21:29:18.02673154Z ==> Detected service running on port 10000
+2026-04-26T21:29:18.092188174Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2026-04-26T21:30:39.729492465Z ==> Deploying...
+2026-04-26T21:30:39.798411555Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T21:30:51.458337934Z ==> Running 'npm run start'
+2026-04-26T21:30:52.477143009Z 
+2026-04-26T21:30:52.477188173Z > khetismart-pro-version@0.0.0 start
+2026-04-26T21:30:52.477193733Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T21:30:52.477232486Z 
+2026-04-26T21:30:58.668304367Z API listening on port 10000
+2026-04-26T21:30:58.668480061Z [security] SESSION_SECRET not set in env — generated a random one for this process. Set it in Replit Secrets to keep sessions valid across restarts.
+2026-04-26T21:31:02.259587659Z ==> Your service is live 🎉
+2026-04-26T21:31:02.334337237Z ==> 
+2026-04-26T21:31:02.336705886Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T21:31:02.339292339Z ==> 
+2026-04-26T21:31:02.342034634Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T21:31:02.344300296Z ==> 
+2026-04-26T21:31:02.346527744Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T21:33:15.659555882Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:33:15.659591735Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:33:15.659598455Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:33:15.659603396Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:33:15.659608446Z   code: 'ECONNREFUSED',
+2026-04-26T21:33:15.659613056Z   [errors]: [
+2026-04-26T21:33:15.659617697Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:33:15.659622347Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:33:15.659626658Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:33:15.659630758Z       errno: -111,
+2026-04-26T21:33:15.659636158Z       code: 'ECONNREFUSED',
+2026-04-26T21:33:15.659640679Z       syscall: 'connect',
+2026-04-26T21:33:15.659645249Z       address: '::1',
+2026-04-26T21:33:15.659649639Z       port: 5432
+2026-04-26T21:33:15.65965407Z     },
+2026-04-26T21:33:15.65965842Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:33:15.65966334Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:33:15.659668021Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:33:15.659672621Z       errno: -111,
+2026-04-26T21:33:15.659677131Z       code: 'ECONNREFUSED',
+2026-04-26T21:33:15.659681382Z       syscall: 'connect',
+2026-04-26T21:33:15.659686172Z       address: '127.0.0.1',
+2026-04-26T21:33:15.659690423Z       port: 5432
+2026-04-26T21:33:15.659695203Z     }
+2026-04-26T21:33:15.659699553Z   ]
+2026-04-26T21:33:15.659704324Z }
+2026-04-26T21:36:05.544529838Z ==> Detected service running on port 10000
+2026-04-26T21:36:05.658513576Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2026-04-26T21:40:10.190879986Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:40:10.190919749Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:40:10.19092672Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:40:10.19093139Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:40:10.19093701Z   code: 'ECONNREFUSED',
+2026-04-26T21:40:10.190941831Z   [errors]: [
+2026-04-26T21:40:10.190946491Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:40:10.190952522Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:40:10.190957102Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:40:10.190961572Z       errno: -111,
+2026-04-26T21:40:10.190968053Z       code: 'ECONNREFUSED',
+2026-04-26T21:40:10.190972763Z       syscall: 'connect',
+2026-04-26T21:40:10.190977024Z       address: '::1',
+2026-04-26T21:40:10.190981874Z       port: 5432
+2026-04-26T21:40:10.190986414Z     },
+2026-04-26T21:40:10.190991455Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:40:10.190996335Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:40:10.191000766Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:40:10.191005506Z       errno: -111,
+2026-04-26T21:40:10.191010236Z       code: 'ECONNREFUSED',
+2026-04-26T21:40:10.191014807Z       syscall: 'connect',
+2026-04-26T21:40:10.191036558Z       address: '127.0.0.1',
+2026-04-26T21:40:10.191040349Z       port: 5432
+2026-04-26T21:40:10.191043299Z     }
+2026-04-26T21:40:10.191046239Z   ]
+2026-04-26T21:40:10.191049389Z }
+2026-04-26T21:41:42.526109177Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:41:42.526128099Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:41:42.526132369Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:41:42.526135509Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:41:42.52613891Z   code: 'ECONNREFUSED',
+2026-04-26T21:41:42.52614205Z   [errors]: [
+2026-04-26T21:41:42.52614519Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:41:42.52614906Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:41:42.52615214Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:41:42.526155171Z       errno: -111,
+2026-04-26T21:41:42.526167632Z       code: 'ECONNREFUSED',
+2026-04-26T21:41:42.526170992Z       syscall: 'connect',
+2026-04-26T21:41:42.526174482Z       address: '::1',
+2026-04-26T21:41:42.526179693Z       port: 5432
+2026-04-26T21:41:42.526184573Z     },
+2026-04-26T21:41:42.526189203Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:41:42.526193834Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:41:42.526215225Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:41:42.526219986Z       errno: -111,
+2026-04-26T21:41:42.526224236Z       code: 'ECONNREFUSED',
+2026-04-26T21:41:42.526228686Z       syscall: 'connect',
+2026-04-26T21:41:42.526233257Z       address: '127.0.0.1',
+2026-04-26T21:41:42.526237747Z       port: 5432
+2026-04-26T21:41:42.526242078Z     }
+2026-04-26T21:41:42.526246288Z   ]
+2026-04-26T21:41:42.526250928Z }
+2026-04-26T21:42:58.856044134Z login error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:42:58.856072266Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:42:58.856079507Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:42:58.856085878Z     at async <anonymous> (/opt/render/project/src/server/index.ts:272:20) {
+2026-04-26T21:42:58.856092558Z   code: 'ECONNREFUSED',
+2026-04-26T21:42:58.856098479Z   [errors]: [
+2026-04-26T21:42:58.856104219Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:42:58.856111049Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:42:58.85611502Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:42:58.85611882Z       errno: -111,
+2026-04-26T21:42:58.85612286Z       code: 'ECONNREFUSED',
+2026-04-26T21:42:58.856126661Z       syscall: 'connect',
+2026-04-26T21:42:58.856130621Z       address: '::1',
+2026-04-26T21:42:58.856134501Z       port: 5432
+2026-04-26T21:42:58.856138411Z     },
+2026-04-26T21:42:58.856142312Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:42:58.856146162Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:42:58.856149972Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:42:58.856153853Z       errno: -111,
+2026-04-26T21:42:58.856157683Z       code: 'ECONNREFUSED',
+2026-04-26T21:42:58.856161513Z       syscall: 'connect',
+2026-04-26T21:42:58.856165284Z       address: '127.0.0.1',
+2026-04-26T21:42:58.856169114Z       port: 5432
+2026-04-26T21:42:58.856172944Z     }
+2026-04-26T21:42:58.856176745Z   ]
+2026-04-26T21:42:58.856180555Z }
+2026-04-26T21:43:32.541456655Z signup error AggregateError [ECONNREFUSED]: 
+2026-04-26T21:43:32.541501468Z     at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+2026-04-26T21:43:32.541507139Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T21:43:32.541511149Z     at async <anonymous> (/opt/render/project/src/server/index.ts:227:22) {
+2026-04-26T21:43:32.541515999Z   code: 'ECONNREFUSED',
+2026-04-26T21:43:32.54152039Z   [errors]: [
+2026-04-26T21:43:32.54152419Z     Error: connect ECONNREFUSED ::1:5432
+2026-04-26T21:43:32.54152895Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:43:32.541532951Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:43:32.541555272Z       errno: -111,
+2026-04-26T21:43:32.541559573Z       code: 'ECONNREFUSED',
+2026-04-26T21:43:32.541563143Z       syscall: 'connect',
+2026-04-26T21:43:32.541567193Z       address: '::1',
+2026-04-26T21:43:32.541571724Z       port: 5432
+2026-04-26T21:43:32.541575954Z     },
+2026-04-26T21:43:32.541579974Z     Error: connect ECONNREFUSED 127.0.0.1:5432
+2026-04-26T21:43:32.541583445Z         at createConnectionError (node:net:1686:14)
+2026-04-26T21:43:32.541587305Z         at afterConnectMultiple (node:net:1716:16) {
+2026-04-26T21:43:32.541591275Z       errno: -111,
+2026-04-26T21:43:32.541594806Z       code: 'ECONNREFUSED',
+2026-04-26T21:43:32.541598616Z       syscall: 'connect',
+2026-04-26T21:43:32.541602496Z       address: '127.0.0.1',
+2026-04-26T21:43:32.541606076Z       port: 5432
+2026-04-26T21:43:32.541610097Z     }
+2026-04-26T21:43:32.541613957Z   ]
+2026-04-26T21:43:32.541618067Z }
+2026-04-26T21:45:28.443454505Z ==> Deploying...
+2026-04-26T21:45:28.526473912Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T21:45:39.338121913Z ==> Running 'npm run start'
+2026-04-26T21:45:40.448862207Z 
+2026-04-26T21:45:40.448888188Z > khetismart-pro-version@0.0.0 start
+2026-04-26T21:45:40.448895778Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T21:45:40.448899018Z 
+2026-04-26T21:45:46.832840795Z API listening on port 10000
+2026-04-26T21:45:46.8330568Z [security] SESSION_SECRET not set in env — generated a random one for this process. Set it in Replit Secrets to keep sessions valid across restarts.
+2026-04-26T21:45:49.743777428Z ==> Your service is live 🎉
+2026-04-26T21:45:50.034633778Z ==> 
+2026-04-26T21:45:50.036639351Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T21:45:50.039206253Z ==> 
+2026-04-26T21:45:50.041116888Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T21:45:50.042993971Z ==> 
+2026-04-26T21:45:50.044898416Z ==> ///////////////////////////////////////////////////////////
