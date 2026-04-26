@@ -8,6 +8,7 @@ import GuideView from './components/GuideView';
 import ProfileView from './components/ProfileView';
 import LoginView from './components/LoginView';
 import FarmingView from './components/FarmingView';
+import InstallPrompt from './components/InstallPrompt';
 import { ViewState, UserProfile } from './types';
 import {
   fetchMe,
@@ -224,6 +225,9 @@ function App() {
       )}
 
       <Navigation currentView={currentView} setView={setCurrentView} />
+
+      {/* PWA install prompt — hides itself on desktop and when already installed */}
+      <InstallPrompt />
     </div>
   );
 }

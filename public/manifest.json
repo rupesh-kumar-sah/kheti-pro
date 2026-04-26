@@ -1,0 +1,55 @@
+{
+  "name": "KhetiSmart - Nepali Farming AI",
+  "short_name": "KhetiSmart",
+  "description": "AI-powered farming companion for Nepal: weather, market prices, crop diagnosis, and Nepali farming guides.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#10B981",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["agriculture", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Crop Doctor",
+      "short_name": "Doctor",
+      "description": "Diagnose crop diseases from a photo",
+      "url": "/?tab=doctor"
+    },
+    {
+      "name": "Market Prices",
+      "short_name": "Market",
+      "description": "Live wholesale market prices",
+      "url": "/?tab=market"
+    },
+    {
+      "name": "Farming Guide",
+      "short_name": "Guide",
+      "description": "Crop-by-crop farming guides in Nepali",
+      "url": "/?tab=farming"
+    }
+  ]
+}

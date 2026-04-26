@@ -10,6 +10,7 @@ AI-powered farming companion for Nepal — a single-page React app powered by Go
 - **Icons:** lucide-react
 - **Persistence:** PostgreSQL (server-side users + profiles); browser `localStorage` (session token, cached AI responses)
 - **Backend:** Express 5 with helmet, gzip compression, rate limiting, HMAC-signed session tokens, bcryptjs hashing
+- **PWA:** Installable on Android/iOS/desktop. Service worker (`public/sw.js`) caches the app shell for offline use. Manifest at `public/manifest.json`, custom icons in `public/icons/`. Install prompt UI (`components/InstallPrompt.tsx`) for both Android (`beforeinstallprompt`) and iOS (manual "Add to Home Screen" hint).
 
 ## Project Structure
 
