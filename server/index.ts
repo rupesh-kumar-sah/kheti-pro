@@ -56,7 +56,10 @@ app.use(
 );
 
 app.use(compression());
-app.use(express.json({ limit: '256kb' }));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/ai')) return next();
+  return express.json({ limit: '256kb' })(req, res, next);
+});
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
