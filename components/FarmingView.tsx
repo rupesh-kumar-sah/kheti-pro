@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Search, Loader2, Sprout, CloudSun, Droplets, Calendar, BookOpen, ChevronRight } from 'lucide-react';
 import { getFarmingGuide } from '../services/geminiService';
+import RichText from './RichText';
 
 const FarmingView: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -116,11 +117,7 @@ const FarmingView: React.FC = () => {
             </div>
             
             <div className="p-6">
-                <div className="prose prose-emerald dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap leading-loose text-gray-700 dark:text-gray-200 font-medium">
-                        {guide}
-                    </div>
-                </div>
+                <RichText text={guide} className="text-gray-700 dark:text-gray-200" />
             </div>
             
             <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-t border-gray-100 dark:border-gray-700 text-center">

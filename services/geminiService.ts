@@ -117,21 +117,63 @@ export const getFarmingGuide = async (cropName: string): Promise<string> => {
 export const analyzeCropHealth = async (imageFile: File): Promise<string> => {
   try {
     const imagePart = await fileToGenerativePart(imageFile);
-    
+
+    const prompt = `
+यो बिरुवाको तस्बिर हेरेर नेपाली भाषामा (देवनागरी लिपिमा) चरणबद्ध रिपोर्ट बनाउनुहोस्।
+
+तल दिइएको ढाँचामा Markdown प्रयोग गरी जवाफ दिनुहोस् — अरू केही नलेख्नुहोस्:
+
+## बिरुवा पहिचान
+(बिरुवाको नाम — नेपाली र अंग्रेजी दुवैमा)
+
+## स्वास्थ्य अवस्था
+(स्वस्थ छ कि छैन, रोग वा कमीको नाम छोटोमा)
+
+## लक्षणहरू
+- (देखिएका मुख्य लक्षण १)
+- (लक्षण २)
+- (लक्षण ३)
+
+## सम्भावित कारण
+- (कारण १)
+- (कारण २)
+
+## चरणबद्ध समाधान
+1. (पहिलो चरण — आज नै गर्नुपर्ने काम)
+2. (दोस्रो चरण)
+3. (तेस्रो चरण)
+4. (चौथो चरण)
+5. (पाँचौँ चरण — फलोअप)
+
+## जैविक/अर्गानिक उपचार
+- (नेपालमा सजिलै पाइने सामग्रीबाट बनाउन सकिने उपचार)
+- (अर्को विकल्प)
+
+## रोकथाम (अर्को पटकका लागि)
+- (रोकथामको उपाय)
+- (रोकथामको उपाय)
+
+नियमहरू:
+- सरल नेपाली शब्द प्रयोग गर्नुहोस्।
+- स्थानीय किसानले बुझ्ने उदाहरण दिनुहोस्।
+- संख्याहरू र समय (जस्तै "७ दिन", "हप्तामा २ पटक") स्पष्ट लेख्नुहोस्।
+- कुनै पनि शीर्षक खाली नछोड्नुहोस्।
+`;
+
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: MODEL_FAST,
       contents: {
         parts: [
           imagePart,
-          { text: "Analyze this image of a crop. Identify the plant, any potential diseases or nutrient deficiencies, and suggest organic remedies suitable for Nepal. Format the output with clear headings." }
+          { text: prompt }
         ]
       }
     });
 
-    return response.text || "Could not analyze the image.";
+    return response.text || "माफ गर्नुहोस्, तस्बिर विश्लेषण गर्न सकिएन।";
   } catch (error) {
     console.error("Error analyzing crop:", error);
-    return "Failed to analyze the image. Please try again.";
+    return "तस्बिर विश्लेषण गर्न समस्या भयो। कृपया फेरि प्रयास गर्नुहोस्।";
   }
 };
 
@@ -322,8 +364,15 @@ export const createChatSession = (): Chat => {
   return ai.chats.create({
     model: MODEL_FAST,
     config: {
-      systemInstruction: "You are a helpful farming assistant for Nepali farmers. You speak English but understand Nepali context (crops, seasons like Monsoon, Dashain). Keep answers helpful, short, and encouraging.",
-      tools: [{ googleSearch: {} }],
+      systemInstruction: `तपाईं नेपाली किसानहरूका लागि सहयोगी कृषि सल्लाहकार "KhetiSmart Assistant" हुनुहुन्छ।
+
+नियमहरू:
+- सधैं नेपाली भाषामा (देवनागरी लिपिमा) जवाफ दिनुहोस्।
+- जवाफ Markdown ढाँचामा दिनुहोस्: छोटो परिचय, त्यसपछि "## चरणबद्ध समाधान" शीर्षक, त्यसपछि क्रमबद्ध (numbered) सूची ("1.", "2.", "3.") मा कदमहरू।
+- आवश्यक भएमा "## सुझाव" वा "## सावधानी" जस्ता थप शीर्षक पनि राख्न सक्नुहुन्छ।
+- नेपालको मौसम (मनसुन, हिउँद), बाली (धान, मकै, गहुँ, आलु, गोलभेँडा आदि) र स्थानीय अभ्यास ध्यानमा राख्नुहोस्।
+- सरल, स्पष्ट र छोटो वाक्य प्रयोग गर्नुहोस्। हरेक चरणमा "के गर्ने" र "किन गर्ने" समावेश गर्नुहोस्।
+- अनिश्चित जानकारी अनुमान नगर्नुहोस्; "स्थानीय कृषि कार्यालयलाई सोध्न" सुझाव दिन सक्नुहुन्छ।`,
     }
   });
 };

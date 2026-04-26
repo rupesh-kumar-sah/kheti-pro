@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeCropHealth } from '../services/geminiService';
 import { DiagnosisRecord } from '../types';
-import { Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, History, Calendar, ChevronRight, Trash2, ArrowLeft, Edit3, Save, Download } from 'lucide-react';
+import { Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, History, Calendar, ChevronRight, Trash2, ArrowLeft, Edit3, Save, Download, Stethoscope, Sparkles } from 'lucide-react';
+import RichText from './RichText';
 
 interface DoctorViewProps {
   userId: string;
@@ -179,10 +180,16 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 pt-6 px-4 transition-colors duration-300">
-      <div className="flex justify-between items-center mb-2 px-2">
-        <h2 className="text-2xl font-bold text-secondary dark:text-emerald-400">Crop Doctor</h2>
+      <div className="flex items-center gap-3 mb-2 px-2">
+        <div className="bg-emerald-100 dark:bg-emerald-900 p-2.5 rounded-full">
+          <Stethoscope size={22} className="text-primary dark:text-emerald-400" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-secondary dark:text-emerald-400">Crop Doctor</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">नेपाली भाषामा चरणबद्ध रोग पहिचान</p>
+        </div>
       </div>
-      <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 px-2">Take a photo of your crop to detect diseases.</p>
+      <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 px-2">तपाईंको बालीको तस्बिर खिच्नुहोस् वा अपलोड गर्नुहोस्।</p>
 
       {!selectedImage ? (
         <div 
@@ -192,8 +199,8 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
           <div className="bg-emerald-100 dark:bg-emerald-900 p-4 rounded-full mb-4">
             <Camera className="text-primary dark:text-emerald-400" size={32} />
           </div>
-          <p className="font-semibold text-gray-700 dark:text-gray-200">Tap to take photo</p>
-          <p className="text-xs text-gray-400 mt-1">or upload from gallery</p>
+          <p className="font-semibold text-gray-700 dark:text-gray-200">तस्बिर खिच्न ट्याप गर्नुहोस्</p>
+          <p className="text-xs text-gray-400 mt-1">वा ग्यालरीबाट छान्नुहोस्</p>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -222,37 +229,36 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin mr-2" /> Analyzing...
+                  <Loader2 className="animate-spin mr-2" /> विश्लेषण गर्दै...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="mr-2" /> Diagnose Disease
+                  <Sparkles className="mr-2" /> रोग पहिचान गर्नुहोस्
                 </>
               )}
             </button>
           )}
 
           {analysis && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md border border-gray-100 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="text-accent" size={20} />
-                  <h3 className="font-bold text-lg text-gray-800 dark:text-white">Diagnosis Report</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Stethoscope size={20} />
+                  <h3 className="font-bold text-lg">निदान रिपोर्ट</h3>
                 </div>
                 {!isEditing && (
                     <div className="flex gap-2">
-                        {/* Save Button - Only show if not saved yet */}
                         {!isSaved && (
-                            <button 
+                            <button
                                 onClick={handleManualSave}
-                                className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-800 transition"
+                                className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full text-xs font-semibold transition"
                             >
-                                <Download size={14} /> Save
+                                <Download size={14} /> सेभ
                             </button>
                         )}
-                        <button 
+                        <button
                             onClick={handleStartEdit}
-                            className="p-1.5 text-gray-500 hover:text-primary hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition"
+                            className="p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition"
                             title="Edit Analysis"
                         >
                             <Edit3 size={18} />
@@ -260,35 +266,35 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
                     </div>
                 )}
               </div>
-              
-              {isEditing ? (
-                  <div className="space-y-3">
-                      <textarea
-                          value={editedAnalysis}
-                          onChange={(e) => setEditedAnalysis(e.target.value)}
-                          className="w-full h-64 p-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none resize-none font-sans leading-relaxed"
-                          placeholder="Enter your notes or correct the diagnosis..."
-                      />
-                      <div className="flex justify-end gap-2">
-                          <button 
-                              onClick={handleCancelEdit}
-                              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-                          >
-                              Cancel
-                          </button>
-                          <button 
-                              onClick={handleSaveEdit}
-                              className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-emerald-600 transition flex items-center gap-1.5"
-                          >
-                              <Save size={16} /> Done
-                          </button>
-                      </div>
-                  </div>
-              ) : (
-                  <div className="prose prose-sm prose-emerald dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 leading-relaxed">
-                    <div className="whitespace-pre-wrap">{analysis}</div>
-                  </div>
-              )}
+
+              <div className="p-5">
+                {isEditing ? (
+                    <div className="space-y-3">
+                        <textarea
+                            value={editedAnalysis}
+                            onChange={(e) => setEditedAnalysis(e.target.value)}
+                            className="w-full h-64 p-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none resize-none font-sans leading-relaxed"
+                            placeholder="आफ्ना नोट थप्नुहोस् वा रिपोर्ट सच्याउनुहोस्..."
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={handleCancelEdit}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                            >
+                                रद्द
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-emerald-600 transition flex items-center gap-1.5"
+                            >
+                                <Save size={16} /> सम्पन्न
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <RichText text={analysis} className="text-gray-700 dark:text-gray-200" />
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -298,13 +304,13 @@ const DoctorView: React.FC<DoctorViewProps> = ({ userId }) => {
       <div className="mt-10 px-2">
         <div className="flex items-center gap-2 mb-4">
            <History size={18} className="text-gray-400" />
-           <h3 className="text-lg font-bold text-secondary dark:text-emerald-400">Recent Diagnoses</h3>
+           <h3 className="text-lg font-bold text-secondary dark:text-emerald-400">पुराना निदानहरू</h3>
         </div>
 
         <div className="space-y-3">
           {history.length === 0 ? (
             <div className="text-center py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <p className="text-gray-400 text-sm">No saved diagnoses yet.</p>
+              <p className="text-gray-400 text-sm">अहिलेसम्म कुनै निदान सेभ गरिएको छैन।</p>
             </div>
           ) : (
             history.map((item) => (
