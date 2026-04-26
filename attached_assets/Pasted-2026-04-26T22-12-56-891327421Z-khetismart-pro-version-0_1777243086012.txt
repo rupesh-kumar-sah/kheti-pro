@@ -1,0 +1,50 @@
+2026-04-26T22:12:56.891327421Z > khetismart-pro-version@0.0.0 start
+2026-04-26T22:12:56.891333971Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T22:12:56.891337131Z 
+2026-04-26T22:13:03.486040332Z API listening on port 10000
+2026-04-26T22:13:05.408375667Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:13:05.410521489Z ==> 
+2026-04-26T22:13:05.412620348Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T22:13:05.41490274Z ==> 
+2026-04-26T22:13:05.416633973Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:14:18.007473382Z ==> Deploying...
+2026-04-26T22:14:18.062754889Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T22:14:29.611574562Z ==> Running 'npm run start'
+2026-04-26T22:14:30.615807767Z 
+2026-04-26T22:14:30.615854328Z > khetismart-pro-version@0.0.0 start
+2026-04-26T22:14:30.615862429Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T22:14:30.615864629Z 
+2026-04-26T22:14:36.708796603Z API listening on port 10000
+2026-04-26T22:14:39.345935026Z ==> Your service is live 🎉
+2026-04-26T22:14:39.454413432Z ==> 
+2026-04-26T22:14:39.45734323Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:14:39.46100499Z ==> 
+2026-04-26T22:14:39.464067348Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T22:14:39.467007787Z ==> 
+2026-04-26T22:14:39.469608711Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:15:37.534930103Z ==> Deploying...
+2026-04-26T22:15:37.616450331Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T22:15:49.600019565Z ==> Running 'npm run start'
+2026-04-26T22:15:50.715439457Z 
+2026-04-26T22:15:50.715468038Z > khetismart-pro-version@0.0.0 start
+2026-04-26T22:15:50.715474108Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T22:15:50.715477458Z 
+2026-04-26T22:15:56.995386408Z API listening on port 10000
+2026-04-26T22:16:00.129605336Z ==> Your service is live 🎉
+2026-04-26T22:16:00.223710691Z ==> 
+2026-04-26T22:16:00.226983612Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:16:00.231191136Z ==> 
+2026-04-26T22:16:00.235752833Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T22:16:00.239324898Z ==> 
+2026-04-26T22:16:00.241988231Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T22:17:52.700188462Z (node:92) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+2026-04-26T22:17:52.700219543Z In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+2026-04-26T22:17:52.700224143Z 
+2026-04-26T22:17:52.700229123Z To prepare for this change:
+2026-04-26T22:17:52.700233843Z - If you want the current behavior, explicitly use 'sslmode=verify-full'
+2026-04-26T22:17:52.700237773Z - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+2026-04-26T22:17:52.700241663Z 
+2026-04-26T22:17:52.700246133Z See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+2026-04-26T22:17:52.700250283Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-04-26T22:21:05.402931079Z ==> Detected service running on port 10000
+2026-04-26T22:21:05.463726285Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
