@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Pool } from 'pg';
+import { createAiRouter } from './aiRoutes';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +83,8 @@ const signupLimiter = rateLimit({
 });
 
 app.use('/api/', apiLimiter);
+
+app.use('/api/ai', createAiRouter());
 
 const failedLoginByPhone = new Map<string, { count: number; lockedUntil: number }>();
 const FAILED_LOGIN_THRESHOLD = 5;

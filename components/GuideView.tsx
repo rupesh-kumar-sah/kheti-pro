@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChatSession } from '../services/geminiService';
+import { createChatSession, ChatSession } from '../services/geminiService';
 import { ChatMessage, LoadingState } from '../types';
 import { Send, User, Bot, Loader2, Trash2, X, Sparkles } from 'lucide-react';
-import { Chat, GenerateContentResponse } from "@google/genai";
 import RichText from './RichText';
 
 interface GuideViewProps {
@@ -25,7 +24,7 @@ const GuideView: React.FC<GuideViewProps> = ({ userId, onClose }) => {
 
   const [input, setInput] = useState('');
   const [status, setStatus] = useState<LoadingState>(LoadingState.IDLE);
-  const chatSessionRef = useRef<Chat | null>(null);
+  const chatSessionRef = useRef<ChatSession | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,7 +89,7 @@ const GuideView: React.FC<GuideViewProps> = ({ userId, onClose }) => {
     setStatus(LoadingState.LOADING);
 
     try {
-      const result: GenerateContentResponse = await chatSessionRef.current.sendMessage({ message: text });
+      const result = await chatSessionRef.current.sendMessage({ message: text });
       const responseText = result.text || 'माफ गर्नुहोस्, मैले बुझिनँ। कृपया फेरि सोध्नुहोस्।';
 
       const botMsg: ChatMessage = {
