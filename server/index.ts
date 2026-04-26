@@ -367,11 +367,30 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Server error' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`API listening on port ${PORT}`);
-  if (!process.env.SESSION_SECRET) {
-    console.warn(
-      '[security] SESSION_SECRET not set in env — generated a random one for this process. Set it in Replit Secrets to keep sessions valid across restarts.'
+async function initSchema(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      phone TEXT PRIMARY KEY,
+      password_hash TEXT NOT NULL,
+      profile JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-  }
-});
+  `);
+}
+
+initSchema()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`API listening on port ${PORT}`);
+      if (!process.env.SESSION_SECRET) {
+        console.warn(
+          '[security] SESSION_SECRET not set in env — generated a random one for this process. Set it in Replit Secrets to keep sessions valid across restarts.'
+        );
+      }
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database schema:', err);
+    process.exit(1);
+  });
