@@ -8,19 +8,14 @@ import GuideView from './components/GuideView';
 import ProfileView from './components/ProfileView';
 import LoginView from './components/LoginView';
 import FarmingView from './components/FarmingView';
-import { ViewState, UserProfile, UserMap } from './types';
-
-// Helper for safe JSON parsing
-function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
-  if (!jsonString) return fallback;
-  try {
-    const result = JSON.parse(jsonString);
-    return result === null ? fallback : result;
-  } catch (e) {
-    console.error("JSON Parse Error in App:", e);
-    return fallback;
-  }
-}
+import { ViewState, UserProfile } from './types';
+import {
+  fetchMe,
+  saveProfile,
+  clearSession,
+  getStoredToken,
+  getStoredPhone,
+} from './services/authService';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Farmer',
@@ -41,44 +36,44 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Lazy initialization to synchronously read storage before render
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      const session = localStorage.getItem('khetismart_session');
-      if (session) {
-        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
-        if (parsedSession && parsedSession.phone) return true;
-      }
-    } catch (e) { console.error(e); }
-    return false;
-  });
+  const hasToken = !!getStoredToken();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasToken);
+  const [currentUserId, setCurrentUserId] = useState<string>(() => getStoredPhone() || '');
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [bootstrapping, setBootstrapping] = useState<boolean>(hasToken);
 
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
-     try {
-      const session = localStorage.getItem('khetismart_session');
-      if (session) {
-        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
-        return parsedSession?.phone || '';
-      }
-    } catch (e) { console.error(e); }
-    return '';
-  });
-
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    try {
-      const session = localStorage.getItem('khetismart_session');
-      if (session) {
-        const parsedSession = safeJsonParse(session, null) as { phone: string } | null;
-        if (parsedSession && parsedSession.phone) {
-          const users = safeJsonParse<UserMap>(localStorage.getItem('khetismart_users'), {});
-          if (users && users[parsedSession.phone]?.profile) {
-            return users[parsedSession.phone].profile;
-          }
+  // Restore session from server when a token exists
+  useEffect(() => {
+    let cancelled = false;
+    if (!hasToken) {
+      setBootstrapping(false);
+      return;
+    }
+    (async () => {
+      try {
+        const me = await fetchMe();
+        if (cancelled) return;
+        if (me) {
+          setUserProfile(me.profile);
+          setCurrentUserId(me.phone);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUserId('');
         }
+      } catch (err) {
+        console.error('Failed to restore session', err);
+        clearSession();
+        setIsAuthenticated(false);
+        setCurrentUserId('');
+      } finally {
+        if (!cancelled) setBootstrapping(false);
       }
-    } catch (e) { console.error(e); }
-    return DEFAULT_PROFILE;
-  });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasToken]);
 
   // Effect to apply dark mode class based on state
   useEffect(() => {
@@ -89,36 +84,36 @@ function App() {
     }
   }, [userProfile.darkMode]);
 
-  // Persist profile updates to localStorage if authenticated
+  // Persist profile updates to the database
   const handleProfileUpdate = (updatedProfile: UserProfile) => {
     setUserProfile(updatedProfile);
-    
-    // Update the record in localStorage using currentUserId
-    if (currentUserId) {
-      const users = safeJsonParse<UserMap>(localStorage.getItem('khetismart_users'), {});
-      if (users[currentUserId]) {
-        users[currentUserId].profile = updatedProfile;
-        localStorage.setItem('khetismart_users', JSON.stringify(users));
-      }
-    }
+    saveProfile(updatedProfile).catch((err) => {
+      console.error('Failed to save profile', err);
+    });
   };
 
   const handleLoginSuccess = (profile: UserProfile, phone: string) => {
-    localStorage.setItem('khetismart_session', JSON.stringify({ phone }));
-    
     setUserProfile(profile);
     setCurrentUserId(phone);
     setIsAuthenticated(true);
-    setCurrentView('home'); // Reset to home on login
+    setCurrentView('home');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('khetismart_session');
+    clearSession();
     setIsAuthenticated(false);
     setCurrentUserId('');
     setUserProfile(DEFAULT_PROFILE);
     document.documentElement.classList.remove('dark');
   };
+
+  if (bootstrapping) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-10 h-10 rounded-full border-4 border-emerald-200 border-t-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginView onLogin={handleLoginSuccess} />;

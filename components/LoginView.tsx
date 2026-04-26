@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sprout, Phone, Lock, User, ArrowRight, Fingerprint, Loader2, Eye, EyeOff } from 'lucide-react';
-import { UserProfile, UserMap } from '../types';
+import { UserProfile } from '../types';
+import { login as apiLogin, signup as apiSignup } from '../services/authService';
 
 interface LoginViewProps {
   onLogin: (profile: UserProfile, phone: string) => void;
@@ -78,75 +79,33 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     }, 1500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!phone.trim() || !password.trim() || (!isLogin && !name.trim())) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
+    try {
+      const result = isLogin
+        ? await apiLogin({ phone: phone.trim(), password })
+        : await apiSignup({
+            phone: phone.trim(),
+            password,
+            name: name.trim(),
+            location: location.trim(),
+          });
 
-    setTimeout(() => {
-      try {
-        const users: UserMap = JSON.parse(localStorage.getItem('khetismart_users') || '{}');
-
-        if (isLogin) {
-          // LOGIN LOGIC
-          const user = users[phone];
-          
-          if (user && user.password === password) {
-            // Success
-            localStorage.setItem('khetismart_last_user', phone);
-            onLogin(user.profile, phone);
-          } else {
-            setError('Invalid phone number or password');
-            setLoading(false);
-          }
-        } else {
-          // SIGN UP LOGIC
-          if (users[phone]) {
-            setError('User already exists with this phone number');
-            setLoading(false);
-            return;
-          }
-
-          if (!name.trim() || !phone.trim() || !password.trim()) {
-             setError('Please fill in all fields');
-             setLoading(false);
-             return;
-          }
-
-          const newProfile: UserProfile = {
-            name: name,
-            location: location || 'Nepal',
-            experienceYears: 0,
-            crops: [],
-            darkMode: false,
-            biometricLogin: false,
-            // biometricId is undefined by default for new users
-            preferences: {
-              weatherAlerts: true,
-              marketPrices: true,
-              schemeUpdates: true,
-              dailyTips: true
-            }
-          };
-
-          const newUser = {
-            password: password,
-            profile: newProfile
-          };
-
-          // Save to storage
-          users[phone] = newUser;
-          localStorage.setItem('khetismart_users', JSON.stringify(users));
-          localStorage.setItem('khetismart_last_user', phone);
-
-          onLogin(newProfile, phone);
-        }
-      } catch (e) {
-         console.error("Login error", e);
-         setError("An unexpected error occurred. Please clear your cache and try again.");
-         setLoading(false);
-      }
-    }, 1000);
+      localStorage.setItem('khetismart_last_user', result.phone);
+      onLogin(result.profile, result.phone);
+    } catch (err: any) {
+      console.error('Auth error', err);
+      setError(err?.message || 'An unexpected error occurred. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
