@@ -1,0 +1,65 @@
+K
+Kkr's workspace
+
+khetipro
+
+Search
+Ctrl+
+K
+
+New
+
+Upgrade
+
+
+s
+Dashboard
+khetipro
+Events
+Settings
+Monitor
+Logs
+Metrics
+Manage
+Environment
+Shell
+Scaling
+Previews
+Disk
+One-Off Jobs
+
+Changelog
+Invite a friend
+
+Contact support
+Render Status
+Web Service
+khetipro
+Node
+Free
+Upgrade your instance
+
+Connect
+
+Manual Deploy
+Service ID:
+srv-d7n84ihkh4rs73b2sang
+
+rupesh-kumar-sah / kheti-pro
+main
+https://khetipro.onrender.com
+
+Your free instance will spin down with inactivity, which can delay requests by 50 seconds or more.
+Upgrade now
+
+Filter events31
+Deploy live for 82f0be1: Fix application errors and improve TypeScript configuration Fixes TypeScript compilation errors by adding Vite client types and correcting `allowedHosts` configuration in `vite.config.ts`, and removes unused `replit_integrations` boilerplate code. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 022906b4-1ac9-443a-bca6-e289ae1142c1 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 885019c1-b770-475e-8567-b7916080230c Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/13707ee1-04f7-44e2-9d7c-09f3f7c21e32/022906b4-1ac9-443a-bca6-e289ae1142c1/Dlgp47F Replit-Helium-Checkpoint-Created: true
+April 27, 2026 at 3:16 AM
+Deploy started for 82f0be1: Fix application errors and improve TypeScript configuration Fixes TypeScript compilation errors by adding Vite client types and correcting `allowedHosts` configuration in `vite.config.ts`, and removes unused `replit_integrations` boilerplate code. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 022906b4-1ac9-443a-bca6-e289ae1142c1 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 885019c1-b770-475e-8567-b7916080230c Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/13707ee1-04f7-44e2-9d7c-09f3f7c21e32/022906b4-1ac9-443a-bca6-e289ae1142c1/Dlgp47F Replit-Helium-Checkpoint-Created: true
+Environment updated
+April 27, 2026 at 3:14 AM
+Deploy live for 82f0be1: Fix application errors and improve TypeScript configuration Fixes TypeScript compilation errors by adding Vite client types and correcting `allowedHosts` configuration in `vite.config.ts`, and removes unused `replit_integrations` boilerplate code. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 022906b4-1ac9-443a-bca6-e289ae1142c1 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 885019c1-b770-475e-8567-b7916080230c Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/13707ee1-04f7-44e2-9d7c-09f3f7c21e32/022906b4-1ac9-443a-bca6-e289ae1142c1/Dlgp47F Replit-Helium-Checkpoint-Created: true
+April 27, 2026 at 3:09 AM
+Rollback
+First deploy started for 82f0be1: Fix application errors and improve TypeScript configuration Fixes TypeScript compilation errors by adding Vite client types and correcting `allowedHosts` configuration in `vite.config.ts`, and removes unused `replit_integrations` boilerplate code. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 022906b4-1ac9-443a-bca6-e289ae1142c1 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 885019c1-b770-475e-8567-b7916080230c Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/13707ee1-04f7-44e2-9d7c-09f3f7c21e32/022906b4-1ac9-443a-bca6-e289ae1142c1/Dlgp47F Replit-Helium-Checkpoint-Created: true
+April 27, 2026 at 3:08 AM
