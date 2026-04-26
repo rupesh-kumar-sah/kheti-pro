@@ -25,7 +25,7 @@ const MODEL_FAST = 'gemini-2.5-flash';
 
 // Cache Configuration
 const CACHE_KEYS = {
-  MARKET_PRICES: 'khetismart_market_prices',
+  MARKET_PRICES: 'khetismart_market_prices_v2',
   HISTORY_PREFIX: 'khetismart_history_',
   PREDICTION_PREFIX: 'khetismart_prediction_',
   GUIDE_PREFIX: 'khetismart_guide_',
@@ -271,32 +271,55 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
   }
 
   try {
-    // Optimized prompt for speed and comprehensive coverage with categorization
+    // Optimized prompt for speed and comprehensive coverage with Nepali names + staples
     const prompt = `
-      Access the current "Daily Price List" from the "Kalimati Fruits and Vegetable Market Development Board" website and other Nepal retail market sources if needed.
-      
-      Extract ALL available items. I need a comprehensive list including:
-      1. Vegetables (Potato, Onion, Cauliflower, etc.)
-      2. Fruits (Apple, Banana, Lime, etc.)
-      3. Grains/Cereals (Rice, Lentils/Pulse, Wheat - if listed in daily reports)
-      4. Spices (Ginger, Garlic, Chili)
-      
+      Get current Nepal retail/wholesale prices. Use the "Daily Price List" from the
+      "Kalimati Fruits and Vegetable Market Development Board" for vegetables, fruits and spices,
+      and use Nepal grocery / Sajha / cooperative / agri-market data for staple grains and pulses.
+
+      Return a COMPREHENSIVE list covering EVERY category below. Do NOT skip a category — if
+      Kalimati does not list it, use the latest typical Nepal market retail price:
+
+      1. Vegetables — potato, onion, tomato, cauliflower, cabbage, carrot, radish, brinjal,
+         pumpkin, bottle gourd, bitter gourd, ladyfinger, beans, peas, spinach, mustard greens,
+         broccoli, cucumber, capsicum, mushroom, etc. (ALL items on the Kalimati daily list)
+      2. Fruits — apple, banana, orange, mango, papaya, guava, pineapple, grapes, watermelon,
+         pomegranate, lime, lemon, pear, kiwi, litchi, etc.
+      3. Grains/Cereals (STAPLES — always include these):
+         - Rice varieties: Basmati rice, Jeera Masino rice, Sona Mansuli rice, Mansuli rice,
+           Sun-dried rice (Usina chamal), Beaten rice (Chiura), Puffed rice (Bhuja)
+         - Wheat (Gahun), Wheat flour (Atta / Pithho), Maida (refined flour), Sooji (semolina)
+         - Maize (Makai), Maize flour, Millet (Kodo), Buckwheat (Phapar), Barley (Jau)
+      4. Pulses/Dal (STAPLES — always include these):
+         - Masoor dal (red lentil), Mung dal (green gram split), Mung whole, Chana dal,
+           Chickpea (whole chana), Black gram (Kalo Maas), Toor/Arhar dal, Rajma (kidney beans),
+           Soyabean, Bhatmas (white soybean), Black-eyed peas (Bodi)
+      5. Spices — ginger, garlic, green chili, dry chili, turmeric (besar), cumin (jeera),
+         coriander seed (dhania), fenugreek (methi), black pepper, cardamom (alaichi),
+         cloves (lwang), cinnamon (dalchini), mustard seed, fennel seed.
+      6. Cooking oils & basics (category "Other"): mustard oil, sunflower oil, soyabean oil,
+         sugar, salt, jaggery (sakkhar/chaku), iodized salt — use typical Nepal retail price.
+
       Return a STRICT JSON Array. Schema:
-      [{ 
-        "id": "kebab-case-name", 
-        "name": "Item Name (English)", 
-        "price": number (Average Wholesale Price in NPR), 
-        "unit": "kg", 
+      [{
+        "id": "kebab-case-english-name",
+        "name": "Item name in English",
+        "nameNepali": "नेपाली नाम (item name in Devanagari/Nepali script)",
+        "price": number (price in NPR — wholesale for Kalimati items, retail otherwise),
+        "unit": "kg" | "litre" | "piece" | "dozen",
         "trend": "up" | "down" | "stable",
-        "category": "Vegetable" | "Fruit" | "Grain" | "Spice" | "Other"
+        "category": "Vegetable" | "Fruit" | "Grain" | "Pulse" | "Spice" | "Other"
       }]
 
       Instructions:
-      1. Extract at least 50-70 items.
-      2. Use the "Average" price.
-      3. For "trend": compare today's average price with yesterday's. Use "up" if today is >2% higher, "down" if >2% lower, otherwise "stable".
-      4. Classify each item into the correct category.
-      5. Output raw JSON only. Do not include markdown formatting or explanations.
+      1. Return at least 70-90 items. Cover EVERY category above. Pulses go in "Pulse" category, not "Grain".
+      2. nameNepali is REQUIRED for every item, written in Devanagari script (e.g. आलु, चामल, मसुर दाल).
+      3. For price use the "Average" Kalimati price for veg/fruit/spice; use typical Nepal market
+         retail price (Bhatbhateni / Sajha / local cooperative range, midpoint) for staples and oils.
+      4. For "trend": compare today's price with yesterday's / last week's. Use "up" if >2% higher,
+         "down" if >2% lower, otherwise "stable". Do NOT default everything to "stable" — pick
+         a realistic trend based on the data you find.
+      5. Output RAW JSON ONLY. No markdown fences, no commentary.
     `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({

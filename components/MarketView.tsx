@@ -226,11 +226,13 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
       result = result.filter(item => item.category === selectedCategory);
     }
 
-    // Search Filter
+    // Search Filter (matches English name, Nepali name, and category)
     if (searchQuery.trim() !== '') {
       const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter(item => 
-        item.name.toLowerCase().includes(lowerQuery) || 
+      result = result.filter(item =>
+        item.name.toLowerCase().includes(lowerQuery) ||
+        (item.nameNepali ?? '').toLowerCase().includes(lowerQuery) ||
+        (item.nameNepali ?? '').includes(searchQuery.trim()) ||
         item.category.toLowerCase().includes(lowerQuery)
       );
     }
@@ -289,7 +291,7 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
 
   const isFiltered = searchQuery !== '' || selectedCategory !== 'All';
 
-  const categories = ['All', 'Vegetable', 'Fruit', 'Grain', 'Spice'];
+  const categories = ['All', 'Vegetable', 'Fruit', 'Grain', 'Pulse', 'Spice', 'Other'];
 
   const currencySymbol = currency === 'NPR' ? 'Rs.' : '$';
 
@@ -415,14 +417,23 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
                           item.category === 'Vegetable' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
                           item.category === 'Fruit' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
                           item.category === 'Grain' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                          item.category === 'Pulse' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
                           item.category === 'Spice' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
                           'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}>
                           {item.category}
                         </span>
                       </div>
-                      <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">{item.name}</h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">Wholesale Rate</p>
+                      {item.nameNepali ? (
+                        <>
+                          <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight">
+                            {item.nameNepali}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.name}</p>
+                        </>
+                      ) : (
+                        <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">{item.name}</h3>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary text-xl">

@@ -11,6 +11,7 @@ AI-powered farming companion for Nepal — a single-page React app powered by Go
 - **Persistence:** PostgreSQL (server-side users + profiles); browser `localStorage` (session token, cached AI responses)
 - **Backend:** Express 5 with helmet, gzip compression, rate limiting, HMAC-signed session tokens, bcryptjs hashing
 - **PWA:** Installable on Android/iOS/desktop. Service worker (`public/sw.js`) caches the app shell for offline use. Manifest at `public/manifest.json`, custom icons in `public/icons/`. Install prompt UI (`components/InstallPrompt.tsx`) for both Android (`beforeinstallprompt`) and iOS (manual "Add to Home Screen" hint).
+- **Market Prices:** Gemini-grounded Kalimati + Nepal retail prices. Returns 70-90 items covering vegetables, fruits, all rice varieties (basmati, jeera masino, mansuli, chiura), wheat/atta/maida, maize/millet/buckwheat, all dals (masoor, mung, chana, kalo maas, toor, rajma, soyabean), spices, and cooking oils. Each item has both English and Nepali (Devanagari) names; UI shows Nepali name as the primary heading. Categories: Vegetable / Fruit / Grain / Pulse / Spice / Other. Cache key bumped to `khetismart_market_prices_v2`.
 
 ## Project Structure
 

@@ -11,10 +11,11 @@ export interface WeatherData {
 export interface MarketItem {
   id: string;
   name: string;
+  nameNepali?: string;
   price: number;
   unit: string;
   trend: 'up' | 'down' | 'stable';
-  category: 'Vegetable' | 'Fruit' | 'Grain' | 'Spice' | 'Other';
+  category: 'Vegetable' | 'Fruit' | 'Grain' | 'Pulse' | 'Spice' | 'Other';
 }
 
 export interface HistoricalPrice {
