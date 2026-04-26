@@ -1,0 +1,50 @@
+2026-04-26T23:09:19.643422434Z 
+2026-04-26T23:09:26.536030429Z (node:91) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+2026-04-26T23:09:26.53606748Z In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+2026-04-26T23:09:26.53607481Z 
+2026-04-26T23:09:26.536081281Z To prepare for this change:
+2026-04-26T23:09:26.536088001Z - If you want the current behavior, explicitly use 'sslmode=verify-full'
+2026-04-26T23:09:26.536093911Z - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+2026-04-26T23:09:26.536099771Z 
+2026-04-26T23:09:26.536105641Z See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+2026-04-26T23:09:26.536109631Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-04-26T23:09:27.065819997Z API listening on port 10000
+2026-04-26T23:09:29.117716Z ==> Your service is live 🎉
+2026-04-26T23:09:29.277954877Z ==> 
+2026-04-26T23:09:29.280658297Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T23:09:29.285592127Z ==> 
+2026-04-26T23:09:29.288234344Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T23:09:29.290773457Z ==> 
+2026-04-26T23:09:29.293237777Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T23:09:53.302052204Z ==> Deploying...
+2026-04-26T23:09:53.359137381Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-26T23:10:04.340931185Z ==> Running 'npm run start'
+2026-04-26T23:10:05.536513924Z 
+2026-04-26T23:10:05.536547305Z > khetismart-pro-version@0.0.0 start
+2026-04-26T23:10:05.536551935Z > NODE_ENV=production tsx server/index.ts
+2026-04-26T23:10:05.536554465Z 
+2026-04-26T23:10:12.230188823Z (node:91) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+2026-04-26T23:10:12.230221864Z In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+2026-04-26T23:10:12.230228064Z 
+2026-04-26T23:10:12.230234224Z To prepare for this change:
+2026-04-26T23:10:12.230239254Z - If you want the current behavior, explicitly use 'sslmode=verify-full'
+2026-04-26T23:10:12.230244284Z - If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+2026-04-26T23:10:12.230248975Z 
+2026-04-26T23:10:12.230254615Z See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+2026-04-26T23:10:12.230259485Z (Use `node --trace-warnings ...` to show where the warning was created)
+2026-04-26T23:10:12.868670839Z API listening on port 10000
+2026-04-26T23:10:14.625103122Z ==> Your service is live 🎉
+2026-04-26T23:10:14.770747426Z ==> 
+2026-04-26T23:10:14.772997065Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T23:10:14.774812285Z ==> 
+2026-04-26T23:10:14.777033392Z ==> Available at your primary URL https://khetipro.onrender.com
+2026-04-26T23:10:14.779038705Z ==> 
+2026-04-26T23:10:14.78136975Z ==> ///////////////////////////////////////////////////////////
+2026-04-26T23:10:20.229742958Z market-prices error ApiError: {"error":{"code":429,"message":"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 40.939315265s.","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Learn more about Gemini API quotas","url":"https://ai.google.dev/gemini-api/docs/rate-limits"}]},{"@type":"type.googleapis.com/google.rpc.QuotaFailure","violations":[{"quotaMetric":"generativelanguage.googleapis.com/generate_content_free_tier_requests","quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier","quotaDimensions":{"location":"global","model":"gemini-2.5-flash"},"quotaValue":"20"}]},{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"40s"}]}}
+2026-04-26T23:10:20.229780619Z     at throwErrorIfNotOK (/opt/render/project/src/node_modules/@google/genai/src/_api_client.ts:953:24)
+2026-04-26T23:10:20.229786589Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-04-26T23:10:20.229791139Z     at async <anonymous> (/opt/render/project/src/node_modules/@google/genai/src/_api_client.ts:561:9)
+2026-04-26T23:10:20.229796359Z     at async Models.Models.generateContent (/opt/render/project/src/node_modules/@google/genai/src/models.ts:128:14)
+2026-04-26T23:10:20.229801469Z     at async <anonymous> (/opt/render/project/src/server/aiRoutes.ts:224:49) {
+2026-04-26T23:10:20.229805839Z   status: 429
+2026-04-26T23:10:20.22983287Z }
