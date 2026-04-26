@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { getMarketPrediction, getRealMarketPrices, getHistoricalPrices } from '../services/geminiService';
 import { TrendingUp, TrendingDown, Minus, Sparkles, Loader2, RefreshCw, ExternalLink, History, X, ArrowRightLeft, Search, AlertTriangle } from 'lucide-react';
-import { MarketItem, HistoricalPrice } from '../types';
+import { MarketItem, HistoricalPrice, NotificationPreferences } from '../types';
+import { maybeShowMarketUpdate } from '../services/notificationService';
+
+interface MarketViewProps {
+  notificationPrefs?: NotificationPreferences;
+}
 
 // --- Skeleton Components ---
 
@@ -135,7 +140,7 @@ const SparklineChart: React.FC<{ data: HistoricalPrice[]; currencySymbol: string
   );
 };
 
-const MarketView: React.FC = () => {
+const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
   const [marketItems, setMarketItems] = useState<MarketItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<MarketItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -164,6 +169,15 @@ const MarketView: React.FC = () => {
             setMarketItems(items);
             // setFilteredItems(items); // Don't reset filters on background update
             setSources(sources);
+            if (notificationPrefs) {
+                const up = items.filter(it => it.trend === 'up').slice(0, 2).map(i => i.name);
+                const down = items.filter(it => it.trend === 'down').slice(0, 2).map(i => i.name);
+                const parts: string[] = [];
+                if (up.length) parts.push(`Up: ${up.join(', ')}`);
+                if (down.length) parts.push(`Down: ${down.join(', ')}`);
+                const summary = parts.length ? parts.join(' · ') : `${items.length} items refreshed`;
+                maybeShowMarketUpdate(notificationPrefs, summary);
+            }
         } else {
             // If explicit refresh and no items, show error only if not background
             if (!isBackground) setError("Could not retrieve market prices. Please check connection.");

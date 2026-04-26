@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { CloudRain, Sun, Wind, Droplets, AlertTriangle, Cloud, CloudSun, Loader2, Zap, CloudSnow, Calendar, X, ArrowUp, ArrowDown, History, ChevronRight } from 'lucide-react';
+import { CloudRain, Sun, Wind, Droplets, AlertTriangle, Cloud, CloudSun, Loader2, Zap, CloudSnow, Calendar, X, ArrowUp, ArrowDown, History, ChevronRight, MapPin } from 'lucide-react';
+import { getLocation, subscribeLocation, LocationInfo } from '../services/locationService';
+import { maybeShowWeatherAlert } from '../services/notificationService';
+import { NotificationPreferences } from '../types';
 
 interface WeatherState {
   temp: number;
@@ -26,20 +29,32 @@ interface DailyForecast {
   isToday: boolean;
 }
 
-const WeatherCard: React.FC = () => {
+interface WeatherCardProps {
+  notificationPrefs?: NotificationPreferences;
+}
+
+const WeatherCard: React.FC<WeatherCardProps> = ({ notificationPrefs }) => {
   const [weather, setWeather] = useState<WeatherState | null>(null);
   const [dailyForecast, setDailyForecast] = useState<DailyForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showForecastModal, setShowForecastModal] = useState(false);
+  const [location, setLocationState] = useState<LocationInfo>(getLocation());
 
   useEffect(() => {
+    const unsub = subscribeLocation((loc) => setLocationState(loc));
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     const fetchWeather = async () => {
       try {
-        // Kathmandu Coordinates
-        const lat = 27.7172;
-        const long = 85.3240;
-        
+        setLoading(true);
+        setError(false);
+        const lat = location.lat;
+        const long = location.lon;
+
         // Fetch current + daily forecast (7 days future + 3 days past)
         const response = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${long}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max&timezone=auto&past_days=3`
@@ -117,7 +132,9 @@ const WeatherCard: React.FC = () => {
            };
         });
 
-        setWeather({
+        if (cancelled) return;
+
+        const nextWeather: WeatherState = {
           temp: Math.round(current.temperature_2m),
           condition,
           humidity: current.relative_humidity_2m,
@@ -127,11 +144,20 @@ const WeatherCard: React.FC = () => {
           isSevere,
           alertTitle,
           alertMessage,
-          wmoCode: code
-        });
+          wmoCode: code,
+        };
+        setWeather(nextWeather);
         setDailyForecast(processedDaily);
         setLoading(false);
+
+        if (notificationPrefs && nextWeather.isSevere && nextWeather.alertTitle && nextWeather.alertMessage) {
+          maybeShowWeatherAlert(notificationPrefs, {
+            title: nextWeather.alertTitle,
+            message: nextWeather.alertMessage,
+          });
+        }
       } catch (err) {
+        if (cancelled) return;
         console.error(err);
         setError(true);
         setLoading(false);
@@ -139,11 +165,14 @@ const WeatherCard: React.FC = () => {
     };
 
     fetchWeather();
-    
+
     // Refresh every 15 minutes
     const interval = setInterval(fetchWeather, 15 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [location.lat, location.lon, notificationPrefs]);
 
   const getWeatherIcon = (code: number, size = 24) => {
     if (code === 0) return <Sun className="text-accent" size={size} />;

@@ -1,7 +1,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, NotificationPreferences } from '../types';
-import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare } from 'lucide-react';
+import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare, Navigation, Loader2, BellRing } from 'lucide-react';
+import {
+  detectLocation,
+  getLocation,
+  subscribeLocation,
+  geocodePlace,
+  setLocation,
+  LocationInfo,
+} from '../services/locationService';
+import {
+  getPermission,
+  requestPermission,
+  notify,
+  Permission,
+} from '../services/notificationService';
 
 interface ProfileViewProps {
   profile: UserProfile;
@@ -18,6 +32,88 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showBiometricModal, setShowBiometricModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [locationInfo, setLocationInfo] = useState<LocationInfo>(getLocation());
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [notifPermission, setNotifPermission] = useState<Permission>(getPermission());
+  const [notifFeedback, setNotifFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeLocation((loc) => setLocationInfo(loc));
+    return () => unsub();
+  }, []);
+
+  const handleDetectLocation = async () => {
+    setLocationError(null);
+    setLocating(true);
+    try {
+      const loc = await detectLocation();
+      setFormData(prev => ({ ...prev, location: loc.name }));
+      if (!isEditing) {
+        onUpdate({ ...formData, location: loc.name });
+      }
+    } catch (err: any) {
+      setLocationError(err?.message || 'Unable to retrieve location.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const handleUseTypedLocation = async () => {
+    if (!formData.location.trim()) return;
+    setLocationError(null);
+    setLocating(true);
+    try {
+      const geo = await geocodePlace(formData.location);
+      if (geo) {
+        setLocation({
+          lat: geo.lat,
+          lon: geo.lon,
+          name: geo.name,
+          source: 'profile',
+          updatedAt: Date.now(),
+        });
+      } else {
+        setLocationError('Location not found. Try a nearby town or district.');
+      }
+    } catch (err) {
+      setLocationError('Could not look up that location.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    setNotifFeedback(null);
+    const result = await requestPermission();
+    setNotifPermission(result);
+    if (result === 'granted') {
+      notify({
+        title: 'Notifications enabled',
+        body: 'You will now receive alerts based on your settings.',
+        tag: 'permission-granted',
+      });
+      setNotifFeedback('Notifications enabled.');
+    } else if (result === 'denied') {
+      setNotifFeedback('Notifications were blocked. Enable them from your browser site settings.');
+    } else if (result === 'unsupported') {
+      setNotifFeedback('This browser does not support notifications.');
+    }
+  };
+
+  const handleTestNotification = () => {
+    setNotifFeedback(null);
+    if (getPermission() !== 'granted') {
+      handleEnableNotifications();
+      return;
+    }
+    const ok = notify({
+      title: 'KhetiSmart test',
+      body: 'Great — notifications are working on this device.',
+      tag: 'test-notification',
+    });
+    setNotifFeedback(ok ? 'Test notification sent.' : 'Could not send a test notification.');
+  };
 
   // Sync formData if profile changes from parent
   useEffect(() => {
@@ -60,16 +156,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
     }));
   };
   
-  const handleTogglePreference = (key: keyof NotificationPreferences) => {
-    setFormData(prev => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        [key]: !prev.preferences[key]
-      }
-    }));
-  };
-
   const handleToggleDarkMode = () => {
     const updated = { ...formData, darkMode: !formData.darkMode };
     setFormData(updated);
@@ -300,9 +386,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                                     type="text" 
                                     value={formData.location}
                                     onChange={(e) => setFormData({...formData, location: e.target.value})}
-                                    className="w-full text-sm bg-transparent border-b border-gray-300 dark:border-gray-700 focus:border-primary outline-none text-gray-600 dark:text-gray-300 placeholder-gray-400 py-0.5 transition-all"
+                                    className="flex-1 text-sm bg-transparent border-b border-gray-300 dark:border-gray-700 focus:border-primary outline-none text-gray-600 dark:text-gray-300 placeholder-gray-400 py-0.5 transition-all"
                                     placeholder="Your Location"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={handleDetectLocation}
+                                    disabled={locating}
+                                    className="text-xs flex items-center gap-1 text-primary hover:underline disabled:opacity-50"
+                                    title="Detect using GPS"
+                                >
+                                    {locating ? <Loader2 size={12} className="animate-spin" /> : <Navigation size={12} />}
+                                    Detect
+                                </button>
                             </div>
                         </div>
                     ) : (
@@ -479,31 +575,68 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                                     </div>
                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
                                 </div>
-                                {isEditing ? (
-                                    <button 
-                                        type="button"
-                                        onClick={() => handleTogglePreference(key)}
-                                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
-                                            formData.preferences[key] ? 'bg-primary' : 'bg-gray-300'
-                                        }`}
-                                        aria-label={`Toggle ${label}`}
-                                        aria-pressed={formData.preferences[key]}
-                                    >
-                                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                                            formData.preferences[key] ? 'translate-x-5' : 'translate-x-0'
-                                        }`} />
-                                    </button>
-                                ) : (
-                                    <span className={`text-xs font-semibold px-2 py-1 rounded-md ${
-                                        formData.preferences[key] 
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                                    }`}>
-                                        {formData.preferences[key] ? 'On' : 'Off'}
-                                    </span>
-                                )}
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        const updated = {
+                                            ...formData,
+                                            preferences: { ...formData.preferences, [key]: !formData.preferences[key] }
+                                        };
+                                        setFormData(updated);
+                                        if (!isEditing) onUpdate(updated);
+                                    }}
+                                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
+                                        formData.preferences[key] ? 'bg-primary' : 'bg-gray-300'
+                                    }`}
+                                    aria-label={`Toggle ${label}`}
+                                    aria-pressed={formData.preferences[key]}
+                                >
+                                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                                        formData.preferences[key] ? 'translate-x-5' : 'translate-x-0'
+                                    }`} />
+                                </button>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Permission status + test */}
+                    <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">Browser permission</span>
+                            <span className={`font-semibold px-2 py-0.5 rounded-md ${
+                                notifPermission === 'granted'
+                                    ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                                    : notifPermission === 'denied'
+                                    ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                            }`}>
+                                {notifPermission === 'granted' && 'Allowed'}
+                                {notifPermission === 'denied' && 'Blocked'}
+                                {notifPermission === 'default' && 'Not asked yet'}
+                                {notifPermission === 'unsupported' && 'Unsupported'}
+                            </span>
+                        </div>
+                        <div className="flex gap-2">
+                            {notifPermission !== 'granted' && notifPermission !== 'unsupported' && (
+                                <button
+                                    type="button"
+                                    onClick={handleEnableNotifications}
+                                    className="flex-1 bg-primary text-white text-xs font-semibold py-2 rounded-lg hover:bg-emerald-600 transition flex items-center justify-center gap-1"
+                                >
+                                    <Bell size={14} /> Enable notifications
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleTestNotification}
+                                className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-1"
+                            >
+                                <BellRing size={14} /> Send test
+                            </button>
+                        </div>
+                        {notifFeedback && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{notifFeedback}</p>
+                        )}
                     </div>
                 </div>
 

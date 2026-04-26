@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navigation from './components/Navigation';
 import HomeView from './components/HomeView';
 import MarketView from './components/MarketView';
@@ -16,6 +16,16 @@ import {
   getStoredToken,
   getStoredPhone,
 } from './services/authService';
+import {
+  detectLocation,
+  ensureLocation,
+  getLocation,
+} from './services/locationService';
+import {
+  syncPermissionWithPreferences,
+  maybeShowDailyTip,
+  maybeShowSchemeUpdate,
+} from './services/notificationService';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Farmer',
@@ -41,6 +51,7 @@ function App() {
   const [currentUserId, setCurrentUserId] = useState<string>(() => getStoredPhone() || '');
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [bootstrapping, setBootstrapping] = useState<boolean>(hasToken);
+  const locationInitRef = useRef(false);
 
   // Restore session from server when a token exists
   useEffect(() => {
@@ -84,6 +95,47 @@ function App() {
     }
   }, [userProfile.darkMode]);
 
+  // Initialise location once authenticated.
+  useEffect(() => {
+    if (!isAuthenticated || locationInitRef.current) return;
+    locationInitRef.current = true;
+    (async () => {
+      // First seed from profile (geocode the textual location) so weather isn't stuck on Kathmandu.
+      try {
+        await ensureLocation(userProfile.location);
+      } catch (err) {
+        console.warn('ensureLocation failed', err);
+      }
+      // Then quietly try GPS for the most accurate coordinates.
+      try {
+        await detectLocation();
+      } catch {
+        // user may have denied — current cached/profile location is fine.
+      }
+    })();
+  }, [isAuthenticated, userProfile.location]);
+
+  // React to notification preference changes: ask for permission and fire pending notifications.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      const perm = await syncPermissionWithPreferences(userProfile.preferences);
+      if (cancelled || perm !== 'granted') return;
+      maybeShowDailyTip(userProfile.preferences);
+      maybeShowSchemeUpdate(userProfile.preferences);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    userProfile.preferences.weatherAlerts,
+    userProfile.preferences.marketPrices,
+    userProfile.preferences.schemeUpdates,
+    userProfile.preferences.dailyTips,
+  ]);
+
   // Persist profile updates to the database
   const handleProfileUpdate = (updatedProfile: UserProfile) => {
     setUserProfile(updatedProfile);
@@ -105,6 +157,7 @@ function App() {
     setCurrentUserId('');
     setUserProfile(DEFAULT_PROFILE);
     document.documentElement.classList.remove('dark');
+    locationInitRef.current = false;
   };
 
   if (bootstrapping) {
@@ -122,17 +175,31 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case 'home':
-        return <HomeView setView={setCurrentView} onOpenChat={() => setIsChatOpen(true)} />;
+        return (
+          <HomeView
+            setView={setCurrentView}
+            onOpenChat={() => setIsChatOpen(true)}
+            userName={userProfile.name}
+            notificationPrefs={userProfile.preferences}
+          />
+        );
       case 'farming':
         return <FarmingView />;
       case 'market':
-        return <MarketView />;
+        return <MarketView notificationPrefs={userProfile.preferences} />;
       case 'doctor':
         return <DoctorView userId={currentUserId} />;
       case 'profile':
         return <ProfileView profile={userProfile} onUpdate={handleProfileUpdate} onLogout={handleLogout} />;
       default:
-        return <HomeView setView={setCurrentView} onOpenChat={() => setIsChatOpen(true)} />;
+        return (
+          <HomeView
+            setView={setCurrentView}
+            onOpenChat={() => setIsChatOpen(true)}
+            userName={userProfile.name}
+            notificationPrefs={userProfile.preferences}
+          />
+        );
     }
   };
 

@@ -17,6 +17,10 @@ AI-powered farming companion for Nepal — a single-page React app powered by Go
 - `App.tsx` — Top-level routing between views, auth state, dark mode
 - `components/` — `LoginView`, `HomeView`, `Navigation`, `MarketView`, `DoctorView`, `GuideView`, `FarmingView`, `ProfileView`, `WeatherCard`, `Header`
 - `services/geminiService.ts` — All Gemini API calls + caching
+- `services/authService.ts` — Frontend wrapper for the signup/login/profile API
+- `services/locationService.ts` — Shared location store (GPS + reverse geocode + profile fallback) with subscribe pattern
+- `services/notificationService.ts` — Browser Notification API permission flow + per-day deduped alerts (weather, market, schemes, daily tips)
+- `server/index.ts` — Express API: signup/login (bcrypt), `/api/me`, profile updates, serves `dist/` in production
 - `types.ts` — Shared TypeScript types
 - `vite.config.ts` — Dev server (port 5000, host 0.0.0.0, all hosts allowed) and `process.env.GEMINI_API_KEY` injection
 

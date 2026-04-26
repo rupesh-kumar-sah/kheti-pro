@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from './Header';
 import WeatherCard from './WeatherCard';
-import { ViewState } from '../types';
+import { ViewState, NotificationPreferences } from '../types';
 import { TrendingUp, Camera, MessageCircle, Sprout, ChevronRight, Plus, Check, Trash2, Bot } from 'lucide-react';
+import { pickDailyTip } from '../services/notificationService';
 
 interface HomeViewProps {
   setView: (view: ViewState) => void;
   onOpenChat: () => void;
+  userName?: string;
+  notificationPrefs?: NotificationPreferences;
 }
 
 interface Task {
@@ -15,9 +18,10 @@ interface Task {
   completed: boolean;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat }) => {
+const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat, userName, notificationPrefs }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const dailyTip = useMemo(() => pickDailyTip(), []);
 
   useEffect(() => {
     const savedTasks = localStorage.getItem('khetismart_tasks');
@@ -66,8 +70,8 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat }) => {
 
   return (
     <div className="pb-24">
-      <Header />
-      <WeatherCard />
+      <Header userName={userName} />
+      <WeatherCard notificationPrefs={notificationPrefs} />
       
       <div className="px-6 mt-8">
         <h3 className="text-lg font-bold text-secondary dark:text-emerald-400 mb-4 transition-colors">Quick Actions</h3>
@@ -126,7 +130,7 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat }) => {
               <span className="text-xs font-semibold uppercase tracking-wider">Today's Tip</span>
             </div>
             <p className="font-medium text-sm leading-relaxed mb-3 text-emerald-50">
-              The best time to water your crops is early morning or late evening to minimize water loss through evaporation.
+              {dailyTip}
             </p>
             <button className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full flex items-center w-fit transition">
               Read More <ChevronRight size={12} className="ml-1" />
