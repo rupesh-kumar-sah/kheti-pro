@@ -8,6 +8,8 @@ interface LoginViewProps {
   onLogin: (profile: UserProfile, phone: string) => void;
 }
 
+type UserMap = Record<string, { profile: UserProfile & { biometricLogin?: boolean; biometricId?: string } }>;
+
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
