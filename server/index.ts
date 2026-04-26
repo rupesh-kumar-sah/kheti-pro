@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -53,6 +54,7 @@ app.use(
   })
 );
 
+app.use(compression());
 app.use(express.json({ limit: '256kb' }));
 
 const apiLimiter = rateLimit({

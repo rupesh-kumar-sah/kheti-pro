@@ -8,7 +8,8 @@ AI-powered farming companion for Nepal — a single-page React app powered by Go
 - **Styling:** Tailwind CSS (via CDN in `index.html`)
 - **AI:** `@google/genai` (Gemini 2.5 Flash) for farming advice, crop image analysis, market prices, and chat
 - **Icons:** lucide-react
-- **Persistence:** Browser `localStorage` (sessions, profiles, cached AI responses)
+- **Persistence:** PostgreSQL (server-side users + profiles); browser `localStorage` (session token, cached AI responses)
+- **Backend:** Express 5 with helmet, gzip compression, rate limiting, HMAC-signed session tokens, bcryptjs hashing
 
 ## Project Structure
 

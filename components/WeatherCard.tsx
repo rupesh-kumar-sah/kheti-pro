@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CloudRain, Sun, Wind, Droplets, AlertTriangle, Cloud, CloudSun, Loader2, Zap, CloudSnow, Calendar, X, ArrowUp, ArrowDown, History, ChevronRight, MapPin } from 'lucide-react';
 import { getLocation, subscribeLocation, LocationInfo } from '../services/locationService';
 import { maybeShowWeatherAlert } from '../services/notificationService';
@@ -40,6 +40,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ notificationPrefs }) => {
   const [error, setError] = useState(false);
   const [showForecastModal, setShowForecastModal] = useState(false);
   const [location, setLocationState] = useState<LocationInfo>(getLocation());
+  // Stash latest prefs in a ref so weather effect doesn't refetch when user toggles notifications
+  const notifPrefsRef = useRef<NotificationPreferences | undefined>(notificationPrefs);
+  useEffect(() => { notifPrefsRef.current = notificationPrefs; }, [notificationPrefs]);
 
   useEffect(() => {
     const unsub = subscribeLocation((loc) => setLocationState(loc));
@@ -150,8 +153,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ notificationPrefs }) => {
         setDailyForecast(processedDaily);
         setLoading(false);
 
-        if (notificationPrefs && nextWeather.isSevere && nextWeather.alertTitle && nextWeather.alertMessage) {
-          maybeShowWeatherAlert(notificationPrefs, {
+        const currentPrefs = notifPrefsRef.current;
+        if (currentPrefs && nextWeather.isSevere && nextWeather.alertTitle && nextWeather.alertMessage) {
+          maybeShowWeatherAlert(currentPrefs, {
             title: nextWeather.alertTitle,
             message: nextWeather.alertMessage,
           });
@@ -172,7 +176,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ notificationPrefs }) => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [location.lat, location.lon, notificationPrefs]);
+  }, [location.lat, location.lon]);
 
   const getWeatherIcon = (code: number, size = 24) => {
     if (code === 0) return <Sun className="text-accent" size={size} />;

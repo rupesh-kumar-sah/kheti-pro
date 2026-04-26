@@ -27,13 +27,27 @@ const MODEL_FAST = 'gemini-2.5-flash';
 const CACHE_KEYS = {
   MARKET_PRICES: 'khetismart_market_prices',
   HISTORY_PREFIX: 'khetismart_history_',
-  PREDICTION_PREFIX: 'khetismart_prediction_'
+  PREDICTION_PREFIX: 'khetismart_prediction_',
+  GUIDE_PREFIX: 'khetismart_guide_',
+  ADVICE_PREFIX: 'khetismart_advice_'
 };
 
 const CACHE_DURATION = {
   MARKET: 60 * 60 * 1000,       // 1 Hour
   HISTORY: 24 * 60 * 60 * 1000, // 24 Hours
-  PREDICTION: 6 * 60 * 60 * 1000 // 6 Hours
+  PREDICTION: 6 * 60 * 60 * 1000, // 6 Hours
+  GUIDE: 7 * 24 * 60 * 60 * 1000, // 7 Days (farming guides rarely change)
+  ADVICE: 60 * 60 * 1000         // 1 Hour
+};
+
+// Simple FNV-1a hash for compact cache keys from prompts
+const hashString = (s: string): string => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
 };
 
 // Helper for safe JSON parsing
@@ -69,6 +83,18 @@ export const fileToGenerativePart = async (file: File): Promise<{ inlineData: { 
 };
 
 export const getFarmingAdvice = async (prompt: string): Promise<string> => {
+  // Cache by prompt hash for instant repeat queries
+  const cacheKey = `${CACHE_KEYS.ADVICE_PREFIX}${hashString(prompt.trim().toLowerCase())}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = safeJsonParse<{ timestamp: number; data: string } | null>(cached, null);
+      if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION.ADVICE) {
+        return parsed.data;
+      }
+    }
+  } catch { /* ignore cache read errors */ }
+
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: MODEL_FAST,
@@ -77,7 +103,11 @@ export const getFarmingAdvice = async (prompt: string): Promise<string> => {
         systemInstruction: "You are an expert agricultural consultant for Nepal named 'KhetiSmart Assistant'. Provide concise, practical advice for farmers in the Kathmandu Valley region. Use simple language.",
       }
     });
-    return response.text || "Sorry, I couldn't generate advice at this moment.";
+    const text = response.text || "Sorry, I couldn't generate advice at this moment.";
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: text }));
+    } catch { /* storage full — ignore */ }
+    return text;
   } catch (error) {
     console.error("Error fetching advice:", error);
     return "An error occurred while connecting to the farming database.";
@@ -85,6 +115,19 @@ export const getFarmingAdvice = async (prompt: string): Promise<string> => {
 };
 
 export const getFarmingGuide = async (cropName: string): Promise<string> => {
+  // Cache guides by crop name (1 week) — they rarely change
+  const normalized = cropName.trim().toLowerCase();
+  const cacheKey = `${CACHE_KEYS.GUIDE_PREFIX}${hashString(normalized)}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = safeJsonParse<{ timestamp: number; data: string } | null>(cached, null);
+      if (parsed && Date.now() - parsed.timestamp < CACHE_DURATION.GUIDE) {
+        return parsed.data;
+      }
+    }
+  } catch { /* ignore cache read errors */ }
+
   try {
     const prompt = `
       Provide a detailed, step-by-step farming guide for "${cropName}" specifically for Nepal.
@@ -107,7 +150,13 @@ export const getFarmingGuide = async (cropName: string): Promise<string> => {
       contents: prompt,
     });
 
-    return response.text || "माफ गर्नुहोस्, जानकारी उपलब्ध हुन सकेन।";
+    const text = response.text || "माफ गर्नुहोस्, जानकारी उपलब्ध हुन सकेन।";
+    if (response.text) {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: text }));
+      } catch { /* storage full — ignore */ }
+    }
+    return text;
   } catch (error) {
     console.error("Error generating farming guide:", error);
     return "प्राविधिक समस्याको कारण जानकारी लोड गर्न सकिएन। कृपया पुनः प्रयास गर्नुहोस्।";
@@ -238,15 +287,16 @@ export const getRealMarketPrices = async (forceRefresh = false): Promise<{ items
         "name": "Item Name (English)", 
         "price": number (Average Wholesale Price in NPR), 
         "unit": "kg", 
-        "trend": "stable",
+        "trend": "up" | "down" | "stable",
         "category": "Vegetable" | "Fruit" | "Grain" | "Spice" | "Other"
       }]
 
       Instructions:
       1. Extract at least 50-70 items.
       2. Use the "Average" price.
-      3. Classify each item into the correct category.
-      4. Output raw JSON only. Do not include markdown formatting or explanations.
+      3. For "trend": compare today's average price with yesterday's. Use "up" if today is >2% higher, "down" if >2% lower, otherwise "stable".
+      4. Classify each item into the correct category.
+      5. Output raw JSON only. Do not include markdown formatting or explanations.
     `;
 
     const response: GenerateContentResponse = await ai.models.generateContent({
