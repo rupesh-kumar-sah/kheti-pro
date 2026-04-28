@@ -16,9 +16,10 @@ function getAi(): GoogleGenAI | null {
 }
 
 function aiUnavailable(res: Response) {
+  console.error("Missing Gemini API Key");
   return res
-    .status(503)
-    .json({ error: 'AI service is not configured. Set AI_INTEGRATIONS_GEMINI_API_KEY.' });
+    .status(500)
+    .json({ error: 'AI service not configured' });
 }
 
 export function createAiRouter(): Router {

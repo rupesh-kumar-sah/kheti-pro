@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F3F4F6;
+  -webkit-tap-highlight-color: transparent;
+}
+.dark body {
+  background-color: #111827;
+}
+/* Hide scrollbar for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+/* PWA Safe Area for newer iPhones */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
