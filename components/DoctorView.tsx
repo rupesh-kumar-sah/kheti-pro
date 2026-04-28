@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeCropHealth } from '../services/geminiService';
+import { analyzeCropHealth } from '../services/aiService';
 import { DiagnosisRecord } from '../types';
 import { Upload, Camera, X, Loader2, AlertCircle, CheckCircle2, History, Calendar, ChevronRight, Trash2, ArrowLeft, Edit3, Save, Download, Stethoscope, Sparkles } from 'lucide-react';
 import RichText from './RichText';

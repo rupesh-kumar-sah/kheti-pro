@@ -1,7 +1,22 @@
 import express, { Request, Response, Router } from 'express';
 import Groq from 'groq-sdk';
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL_PRO = 'llama-3.3-70b-versatile';
+const MODEL_FAST = 'llama-3.1-8b-instant';
+const MODEL_VISION = 'meta-llama/llama-4-scout-17b-16e-instruct';
+
+function cleanJson(text: string): string {
+  // Remove markdown code blocks if present
+  let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // Extract content between the first [ and last ]
+  const start = clean.indexOf('[');
+  const end = clean.lastIndexOf(']');
+  if (start !== -1 && end !== -1) {
+    return clean.substring(start, end + 1);
+  }
+  return clean;
+}
+
 
 function getGroq(): Groq | null {
   const apiKey = process.env.GROQ_API_KEY;
@@ -22,7 +37,7 @@ async function chat(
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
 ): Promise<string> {
   const completion = await groq.chat.completions.create({
-    model: MODEL,
+    model: MODEL_PRO,
     messages,
     temperature: 0.7,
     max_tokens: 4096,
@@ -108,7 +123,7 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
 ## रोकथाम (अर्को पटकका लागि)`;
 
       const completion = await groq.chat.completions.create({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: MODEL_VISION,
         messages: [
           {
             role: 'user',
@@ -136,9 +151,11 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
     try {
-      const text = await chat(groq, [
-        { role: 'user', content: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).` },
-      ]);
+      const completion = await groq.chat.completions.create({
+        model: MODEL_FAST,
+        messages: [{ role: 'user', content: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).` }],
+      });
+      const text = completion.choices[0]?.message?.content || '';
       return res.json({ text });
     } catch (err) {
       console.error('market-prediction error', err);
@@ -169,19 +186,17 @@ Cover: Vegetables, Fruits, Grains (rice, wheat, maize, millet), Pulses (dal vari
 Use realistic Nepal market prices. Output RAW JSON ONLY. No markdown fences, no commentary.`;
 
       console.log('Fetching market prices from Groq...');
-      const text = await chat(groq, [{ role: 'user', content: prompt }]);
+      const completion = await groq.chat.completions.create({
+        model: MODEL_FAST,
+        messages: [{ role: 'user', content: prompt }],
+      });
+      const text = completion.choices[0]?.message?.content || '';
       console.log('Groq response received. Length:', text.length);
       
       let items: any[] = [];
       try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          items = JSON.parse(jsonMatch[0]);
-          console.log('Successfully parsed', items.length, 'items');
-        } else {
-          console.warn('No JSON array found in response. Trying fallback.');
-          items = JSON.parse(text.trim());
-        }
+        items = JSON.parse(cleanJson(text));
+        console.log('Successfully parsed', items.length, 'items');
       } catch (e) {
         console.error('market-prices JSON parse error. Raw text starts with:', text.substring(0, 200));
       }
@@ -216,13 +231,14 @@ Generate typical wholesale price history for ${cropName} in Kathmandu (Kalimati)
 Output strictly a JSON array sorted by date:
 [{ "date": "MMM DD", "price": number }]
 No markdown.`;
-      const text = await chat(groq, [{ role: 'user', content: prompt }]);
+      const completion = await groq.chat.completions.create({
+        model: MODEL_FAST,
+        messages: [{ role: 'user', content: prompt }],
+      });
+      const text = completion.choices[0]?.message?.content || '';
       let history: any[] = [];
       try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          history = JSON.parse(jsonMatch[0]);
-        }
+        history = JSON.parse(cleanJson(text));
       } catch (e) {
         console.error('historical-prices JSON parse error', e);
       }

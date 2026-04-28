@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Search, Loader2, Sprout, CloudSun, Droplets, Calendar, BookOpen, ChevronRight } from 'lucide-react';
-import { getFarmingGuide } from '../services/geminiService';
+import { getFarmingGuide } from '../services/aiService';
 import RichText from './RichText';
 
 const FarmingView: React.FC = () => {

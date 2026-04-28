@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getMarketPrediction, getRealMarketPrices, getHistoricalPrices } from '../services/geminiService';
+import { getMarketPrediction, getRealMarketPrices, getHistoricalPrices } from '../services/aiService';
 import { TrendingUp, TrendingDown, Minus, Sparkles, Loader2, RefreshCw, ExternalLink, History, X, ArrowRightLeft, Search, AlertTriangle } from 'lucide-react';
 import { MarketItem, HistoricalPrice, NotificationPreferences } from '../types';
 import { maybeShowMarketUpdate } from '../services/notificationService';

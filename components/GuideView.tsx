@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createChatSession, ChatSession } from '../services/geminiService';
+import { createChatSession, ChatSession } from '../services/aiService';
 import { ChatMessage, LoadingState } from '../types';
 import { Send, User, Bot, Loader2, Trash2, X, Sparkles } from 'lucide-react';
 import RichText from './RichText';

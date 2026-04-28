@@ -207,11 +207,7 @@ function getAuthPhone(req: Request): string | null {
   return verifyToken(match[1]);
 }
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
-});
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'KhetiSmart API' }));
 
 app.post('/api/auth/signup', signupLimiter, async (req: Request, res: Response) => {
   try {
