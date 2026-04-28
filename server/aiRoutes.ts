@@ -1,18 +1,12 @@
 import express, { Request, Response, Router } from 'express';
-import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 
-const MODEL_FAST = 'gemini-2.5-flash';
+const MODEL_FAST = 'gemini-1.5-flash';
 
-function getAi(): GoogleGenAI | null {
+function getAi(): GoogleGenerativeAI | null {
   const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
-  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
   if (!apiKey) return null;
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: baseUrl
-      ? { apiVersion: '', baseUrl }
-      : undefined,
-  });
+  return new GoogleGenerativeAI(apiKey);
 }
 
 function aiUnavailable(res: Response) {
@@ -33,15 +27,13 @@ export function createAiRouter(): Router {
     const prompt: string = (req.body?.prompt || '').toString().slice(0, 4000);
     if (!prompt.trim()) return res.status(400).json({ error: 'prompt required' });
     try {
-      const response: GenerateContentResponse = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: MODEL_FAST,
-        contents: prompt,
-        config: {
-          systemInstruction:
-            "You are an expert agricultural consultant for Nepal named 'KhetiSmart Assistant'. Provide concise, practical advice for farmers in the Kathmandu Valley region. Use simple language.",
-        },
+        systemInstruction: "You are an expert agricultural consultant for Nepal named 'KhetiSmart Assistant'. Provide concise, practical advice for farmers in the Kathmandu Valley region. Use simple language.",
       });
-      return res.json({ text: response.text || '' });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return res.json({ text: response.text() || '' });
     } catch (err) {
       console.error('farming-advice error', err);
       return res.status(500).json({ error: 'AI request failed' });
@@ -69,11 +61,10 @@ Include the following sections clearly:
 
 Format using Markdown with bold headings. Keep it practical and easy for a farmer to understand.
       `;
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: MODEL_FAST,
-        contents: prompt,
-      });
-      return res.json({ text: response.text || '' });
+      const model = ai.getGenerativeModel({ model: MODEL_FAST });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return res.json({ text: response.text() || '' });
     } catch (err) {
       console.error('farming-guide error', err);
       return res.status(500).json({ error: 'AI request failed' });
@@ -136,16 +127,13 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
 - संख्याहरू र समय (जस्तै "७ दिन", "हप्तामा २ पटक") स्पष्ट लेख्नुहोस्।
 - कुनै पनि शीर्षक खाली नछोड्नुहोस्।
 `;
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: MODEL_FAST,
-        contents: {
-          parts: [
-            { inlineData: { data: imageData, mimeType } },
-            { text: prompt },
-          ],
-        },
-      });
-      return res.json({ text: response.text || '' });
+      const model = ai.getGenerativeModel({ model: MODEL_FAST });
+      const result = await model.generateContent([
+        { inlineData: { data: imageData, mimeType } },
+        { text: prompt },
+      ]);
+      const response = await result.response;
+      return res.json({ text: response.text() || '' });
     } catch (err) {
       console.error('analyze-crop error', err);
       return res.status(500).json({ error: 'AI request failed' });
@@ -158,11 +146,10 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
     try {
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: MODEL_FAST,
-        contents: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).`,
-      });
-      return res.json({ text: response.text || '' });
+      const model = ai.getGenerativeModel({ model: MODEL_FAST });
+      const result = await model.generateContent(`Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).`);
+      const response = await result.response;
+      return res.json({ text: response.text() || '' });
     } catch (err) {
       console.error('market-prediction error', err);
       return res.status(500).json({ error: 'AI request failed' });
@@ -222,15 +209,14 @@ Instructions:
    a realistic trend based on the data you find.
 5. Output RAW JSON ONLY. No markdown fences, no commentary.
       `;
-      const response: GenerateContentResponse = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: MODEL_FAST,
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
+        tools: [{ googleSearchRetrieval: {} } as any],
       });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
 
-      const text = response.text || '';
+      const text = response.text() || '';
       let items: any[] = [];
       try {
         const start = text.indexOf('[');
@@ -270,14 +256,13 @@ Output strictly a JSON array sorted by date:
 
 No markdown.
       `;
-      const response: GenerateContentResponse = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: MODEL_FAST,
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
+        tools: [{ googleSearchRetrieval: {} } as any],
       });
-      const text = response.text || '';
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text() || '';
       let history: any[] = [];
       try {
         const start = text.indexOf('[');
@@ -313,18 +298,19 @@ No markdown.
     if (!message.trim()) return res.status(400).json({ error: 'message required' });
 
     try {
-      const contents = history
-        .filter((m: any) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string')
-        .slice(-30)
-        .map((m: any) => ({ role: m.role, parts: [{ text: m.text.slice(0, 4000) }] }));
-      contents.push({ role: 'user', parts: [{ text: message }] });
-
-      const response: GenerateContentResponse = await ai.models.generateContent({
+      const chat = ai.getGenerativeModel({
         model: MODEL_FAST,
-        contents,
-        config: { systemInstruction: CHAT_SYSTEM_INSTRUCTION },
+        systemInstruction: CHAT_SYSTEM_INSTRUCTION,
+      }).startChat({
+        history: history
+          .filter((m: any) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string')
+          .slice(-30)
+          .map((m: any) => ({ role: m.role, parts: [{ text: m.text.slice(0, 4000) }] })),
       });
-      return res.json({ text: response.text || '' });
+
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      return res.json({ text: response.text() || '' });
     } catch (err) {
       console.error('chat error', err);
       return res.status(500).json({ error: 'AI request failed' });
