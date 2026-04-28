@@ -209,10 +209,7 @@ Instructions:
    a realistic trend based on the data you find.
 5. Output RAW JSON ONLY. No markdown fences, no commentary.
       `;
-      const model = ai.getGenerativeModel({
-        model: MODEL_FAST,
-        tools: [{ googleSearchRetrieval: {} } as any],
-      });
+      const model = ai.getGenerativeModel({ model: MODEL_FAST });
       const result = await model.generateContent(prompt);
       const response = await result.response;
 
@@ -256,10 +253,7 @@ Output strictly a JSON array sorted by date:
 
 No markdown.
       `;
-      const model = ai.getGenerativeModel({
-        model: MODEL_FAST,
-        tools: [{ googleSearchRetrieval: {} } as any],
-      });
+      const model = ai.getGenerativeModel({ model: MODEL_FAST });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text() || '';
