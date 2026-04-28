@@ -211,6 +211,8 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 app.post('/api/auth/signup', signupLimiter, async (req: Request, res: Response) => {
   try {
     const phone = normalizePhone(req.body?.phone);

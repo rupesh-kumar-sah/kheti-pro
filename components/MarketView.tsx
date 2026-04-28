@@ -159,8 +159,27 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
   const [historyData, setHistoryData] = useState<Record<string, HistoricalPrice[]>>({});
   const [loadingHistory, setLoadingHistory] = useState<Record<string, boolean>>({});
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  
+  // Rate Limiting State (2 min gap)
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(() => {
+    return Number(localStorage.getItem('khetismart_last_market_refresh') || 0);
+  });
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+
 
   const fetchPrices = async (forceRefresh: boolean = false, isBackground: boolean = false) => {
+    // Enforce 2-minute rate limit for manual refreshes
+    if (forceRefresh && !isBackground) {
+      const now = Date.now();
+      const diff = now - lastRefreshTime;
+      if (diff < 120000) {
+        console.warn(`Rate limit: Please wait ${Math.ceil((120000 - diff) / 1000)}s`);
+        return;
+      }
+      setLastRefreshTime(now);
+      localStorage.setItem('khetismart_last_market_refresh', now.toString());
+    }
+
     if (!isBackground) setLoadingData(true);
     setError(null);
     try {
@@ -209,13 +228,27 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
     
     fetchExchangeRate();
 
+    // Cooldown timer update
+    const timerId = setInterval(() => {
+      const now = Date.now();
+      const diff = now - lastRefreshTime;
+      if (diff < 120000) {
+        setCooldownRemaining(Math.ceil((120000 - diff) / 1000));
+      } else {
+        setCooldownRemaining(0);
+      }
+    }, 1000);
+
     // Auto-refresh every 15 minutes
     const intervalId = setInterval(() => {
       fetchPrices(true, true); // forceRefresh=true, isBackground=true
     }, 15 * 60 * 1000);
 
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      clearInterval(timerId);
+      clearInterval(intervalId);
+    };
+  }, [lastRefreshTime]);
 
   useEffect(() => {
     // Filter items based on search query and category
@@ -319,10 +352,15 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
             </button>
             <button 
               onClick={() => fetchPrices(true, false)} 
-              disabled={loadingData}
-              className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition disabled:opacity-50"
+              disabled={loadingData || cooldownRemaining > 0}
+              className={`flex items-center gap-2 p-2 px-3 bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition disabled:opacity-70 disabled:cursor-not-allowed ${cooldownRemaining > 0 ? 'text-xs' : ''}`}
             >
-              <RefreshCw size={20} className={loadingData ? "animate-spin" : ""} />
+              <RefreshCw size={18} className={loadingData ? "animate-spin" : ""} />
+              {cooldownRemaining > 0 && (
+                <span className="font-mono font-bold text-primary">
+                  {Math.floor(cooldownRemaining / 60)}:{(cooldownRemaining % 60).toString().padStart(2, '0')}
+                </span>
+              )}
             </button>
         </div>
       </div>
