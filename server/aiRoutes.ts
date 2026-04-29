@@ -32,17 +32,51 @@ function aiUnavailable(res: Response) {
   return res.status(500).json({ error: 'AI service not configured' });
 }
 
+// Retry wrapper for robust API handling with automatic model fallback
+async function completionWithRetry(
+  groq: Groq,
+  options: Parameters<Groq.Chat.Completions['create']>[0],
+  retries = 3
+): Promise<string> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const completion = await groq.chat.completions.create(options);
+      return completion.choices[0]?.message?.content || '';
+    } catch (err: any) {
+      const status = err?.status;
+      const errMsg = err?.error?.error?.message || err?.message || '';
+      
+      // If we hit a daily token limit for a large model, fallback to the fast model instantly
+      if (status === 429 && errMsg.includes('tokens per day') && options.model !== MODEL_FAST) {
+        console.warn(`[Fallback] Daily token limit reached for ${options.model}. Switching to ${MODEL_FAST}.`);
+        options.model = MODEL_FAST;
+        attempt--; // Don't count this as a failed retry since we are changing strategies
+        continue;
+      }
+
+      const isRetryable = status === 429 || status === 503 || status >= 500;
+      if (isRetryable && attempt < retries) {
+        const delayMs = attempt * 2000; // 2s, 4s, 6s
+        console.warn(`Groq API error (${status}). Retrying in ${delayMs / 1000}s... (attempt ${attempt}/${retries})`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 async function chat(
   groq: Groq,
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
 ): Promise<string> {
-  const completion = await groq.chat.completions.create({
+  return completionWithRetry(groq, {
     model: MODEL_PRO,
     messages,
     temperature: 0.7,
     max_tokens: 4096,
   });
-  return completion.choices[0]?.message?.content || '';
 }
 
 export function createAiRouter(): Router {
@@ -122,7 +156,7 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
 ## जैविक/अर्गानिक उपचार
 ## रोकथाम (अर्को पटकका लागि)`;
 
-      const completion = await groq.chat.completions.create({
+      const text = await completionWithRetry(groq, {
         model: MODEL_VISION,
         messages: [
           {
@@ -136,7 +170,6 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
         temperature: 0.7,
         max_tokens: 2048,
       });
-      const text = completion.choices[0]?.message?.content || '';
       return res.json({ text });
     } catch (err) {
       console.error('analyze-crop error', err);
@@ -151,11 +184,10 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
     try {
-      const completion = await groq.chat.completions.create({
+      const text = await completionWithRetry(groq, {
         model: MODEL_FAST,
         messages: [{ role: 'user', content: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).` }],
       });
-      const text = completion.choices[0]?.message?.content || '';
       return res.json({ text });
     } catch (err) {
       console.error('market-prediction error', err);
@@ -186,11 +218,10 @@ Cover: Vegetables, Fruits, Grains (rice, wheat, maize, millet), Pulses (dal vari
 Use realistic Nepal market prices. Output RAW JSON ONLY. No markdown fences, no commentary.`;
 
       console.log('Fetching market prices from Groq...');
-      const completion = await groq.chat.completions.create({
+      const text = await completionWithRetry(groq, {
         model: MODEL_FAST,
         messages: [{ role: 'user', content: prompt }],
       });
-      const text = completion.choices[0]?.message?.content || '';
       console.log('Groq response received. Length:', text.length);
       
       let items: any[] = [];
@@ -231,11 +262,10 @@ Generate typical wholesale price history for ${cropName} in Kathmandu (Kalimati)
 Output strictly a JSON array sorted by date:
 [{ "date": "MMM DD", "price": number }]
 No markdown.`;
-      const completion = await groq.chat.completions.create({
+      const text = await completionWithRetry(groq, {
         model: MODEL_FAST,
         messages: [{ role: 'user', content: prompt }],
       });
-      const text = completion.choices[0]?.message?.content || '';
       let history: any[] = [];
       try {
         history = JSON.parse(cleanJson(text));
