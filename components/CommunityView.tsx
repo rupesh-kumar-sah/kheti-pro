@@ -238,7 +238,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({ userId }) => {
       const isNowLiked = await likePost(id);
       const updateList = (list: Post[]) => list.map(p => {
         if (p.id !== id) return p;
-        const oldCount = p.likes_count || 0;
+        const oldCount = Number(p.likes_count || 0);
         return {
           ...p,
           is_liked: isNowLiked,
