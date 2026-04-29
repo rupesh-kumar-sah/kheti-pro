@@ -59,7 +59,7 @@ app.use(
 app.use(compression());
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/ai')) return next();
-  return express.json({ limit: '256kb' })(req, res, next);
+  return express.json({ limit: '5mb' })(req, res, next);
 });
 
 const apiLimiter = rateLimit({
@@ -325,6 +325,9 @@ function sanitizeProfile(input: any): any | null {
     darkMode: !!input.darkMode,
     biometricLogin: !!input.biometricLogin,
     biometricId: typeof input.biometricId === 'string' ? sanitizeText(input.biometricId, 128) : undefined,
+    profilePicture: typeof input.profilePicture === 'string' && input.profilePicture.startsWith('data:image/') 
+      ? input.profilePicture 
+      : undefined,
     preferences: {
       weatherAlerts: !!prefsIn.weatherAlerts,
       marketPrices: !!prefsIn.marketPrices,
