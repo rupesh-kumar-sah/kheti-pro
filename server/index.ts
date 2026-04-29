@@ -46,8 +46,30 @@ const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = IS_PROD ? 12 : 8; // faster in dev
 
 const app = express();
+
+let dbReady = false;
+const HOST = IS_PROD ? '0.0.0.0' : '127.0.0.1';
+// Start listening IMMEDIATELY to stop ECONNREFUSED
+app.listen(PORT, HOST, () => {
+  console.log(`[server] Port ${PORT} opened on ${HOST}. Initializing database...`);
+  initSchema()
+    .then(() => {
+      dbReady = true;
+      console.log(`[server] Database initialized. API ready at http://127.0.0.1:${PORT}`);
+    })
+    .catch((err) => {
+      console.error('[server] DB Init Failed:', err);
+      process.exit(1);
+    });
+});
+
+// Middleware to wait for DB
+app.use((req, res, next) => {
+  if (dbReady || req.path === '/api/health') return next();
+  return res.status(503).json({ error: 'Server is starting up, please wait...' });
+});
+
 app.disable('x-powered-by');
-app.set('trust proxy', 1);
 
 app.use(
   helmet({
@@ -328,6 +350,81 @@ app.post('/api/auth/login', loginLimiter, async (req: Request, res: Response) =>
   } catch (err) {
     console.error('login error', err);
     return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/neon-session', async (req: Request, res: Response) => {
+  const { sessionToken } = req.body;
+  if (!sessionToken) return res.status(400).json({ error: 'Missing session token' });
+
+  try {
+    // 1. Verify session with Neon Auth tables
+    const sessionRes = await pool.query(
+      `SELECT u.email, u.name, u.id as neon_id, u.image
+       FROM neon_auth.user u 
+       JOIN neon_auth.session s ON s.user_id = u.id 
+       WHERE s.id = $1 AND s.expires_at > NOW()`,
+      [sessionToken]
+    );
+
+    if (sessionRes.rowCount === 0) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+
+    const neonUser = sessionRes.rows[0];
+    console.log(`[auth] Syncing Neon session for: ${neonUser.email} (${neonUser.neon_id})`);
+
+    // 2. Find or create user in our public.users table
+    let userResult = await pool.query(
+      'SELECT phone, profile FROM users WHERE neon_id = $1 OR email = $2',
+      [neonUser.neon_id, neonUser.email]
+    );
+
+    let phone: string;
+    let profile: any;
+
+    if (userResult.rowCount === 0) {
+      console.log(`[auth] Creating new account for Google user: ${neonUser.email}`);
+      // Create new user for this Google account
+      phone = neonUser.email; 
+      profile = {
+        name: neonUser.name || 'Farmer',
+        location: 'Nepal',
+        experienceYears: 0,
+        crops: [],
+        tasks: [],
+        darkMode: false,
+        biometricLogin: false,
+        profilePicture: neonUser.image || null,
+        preferences: {
+          weatherAlerts: true,
+          marketPrices: true,
+          schemeUpdates: false,
+          dailyTips: true
+        }
+      };
+
+      await pool.query(
+        'INSERT INTO users (phone, email, neon_id, profile) VALUES ($1, $2, $3, $4)',
+        [phone, neonUser.email, neonUser.neon_id, profile]
+      );
+    } else {
+      phone = userResult.rows[0].phone;
+      profile = userResult.rows[0].profile;
+      console.log(`[auth] Linking existing account (${phone}) to Neon user`);
+      
+      // Update neon_id/email if they were missing (account linking)
+      await pool.query(
+        'UPDATE users SET neon_id = $1, email = $2 WHERE phone = $3',
+        [neonUser.neon_id, neonUser.email, phone]
+      );
+    }
+
+    const token = signToken(phone);
+    return res.json({ token, phone, profile, isNewUser: userResult.rowCount === 0 });
+  } catch (err) {
+    console.error('Neon session sync error', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -689,29 +786,3 @@ async function initSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);
   `);
 }
-
-let dbReady = false;
-
-// Middleware to wait for DB
-app.use((req, res, next) => {
-  if (dbReady || req.path === '/api/health') return next();
-  return res.status(503).json({ error: 'Server is starting up, please wait...' });
-});
-
-// Start listening immediately to avoid ECONNREFUSED from proxy
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[server] Port ${PORT} opened on 0.0.0.0. Initializing database...`);
-  
-  initSchema()
-    .then(() => {
-      dbReady = true;
-      console.log(`[server] Database initialized. API is fully ready at http://127.0.0.1:${PORT}`);
-      if (!process.env.SESSION_SECRET) {
-        console.warn('[security] SESSION_SECRET not set in env — using ephemeral secret.');
-      }
-    })
-    .catch((err) => {
-      console.error('[server] Failed to initialize database:', err);
-      process.exit(1);
-    });
-});

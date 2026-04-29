@@ -56,38 +56,60 @@ function App() {
   const [bootstrapping, setBootstrapping] = useState<boolean>(hasToken);
   const locationInitRef = useRef(false);
 
-  // Restore session from server when a token exists
+  // Unified Bootstrapping Effect: Handles both Google Sync and Local Session restoration
   useEffect(() => {
     let cancelled = false;
-    if (!hasToken) {
-      setBootstrapping(false);
-      return;
-    }
+    
     (async () => {
+      setBootstrapping(true);
       try {
-        const me = await fetchMe();
-        if (cancelled) return;
-        if (me) {
-          setUserProfile(me.profile);
-          setCurrentUserId(me.phone);
-          setIsAuthenticated(true);
+        // 1. Try Google Sync First (Handles redirect callback)
+        const { authClient } = await import('./services/neonAuth');
+        const sessionRes = await authClient.getSession();
+        
+        if (!cancelled && sessionRes.data?.session?.token) {
+          const { syncNeonSession } = await import('./services/authService');
+          const result = await syncNeonSession(sessionRes.data.session.token);
+          
+          if (!cancelled) {
+            setUserProfile(result.profile);
+            setCurrentUserId(result.phone);
+            setIsAuthenticated(true);
+            if ((result as any).isNewUser) setCurrentView('profile');
+            setBootstrapping(false);
+            return; // Success!
+          }
+        }
+
+        // 2. Fallback to Local Token
+        if (hasToken) {
+          const me = await fetchMe();
+          if (!cancelled) {
+            if (me) {
+              setUserProfile(me.profile);
+              setCurrentUserId(me.phone);
+              setIsAuthenticated(true);
+            } else {
+              setIsAuthenticated(false);
+              clearSession();
+            }
+          }
         } else {
-          setIsAuthenticated(false);
-          setCurrentUserId('');
+          if (!cancelled) setIsAuthenticated(false);
         }
       } catch (err) {
-        console.error('Failed to restore session', err);
-        clearSession();
-        setIsAuthenticated(false);
-        setCurrentUserId('');
+        console.error('Bootstrapping failed', err);
+        if (!cancelled) {
+          setIsAuthenticated(false);
+          clearSession();
+        }
       } finally {
         if (!cancelled) setBootstrapping(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasToken]);
+
+    return () => { cancelled = true; };
+  }, []);
 
   // Effect to apply dark mode class based on state
   useEffect(() => {

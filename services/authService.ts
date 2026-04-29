@@ -115,3 +115,13 @@ export async function saveProfile(profile: UserProfile): Promise<UserProfile> {
   const data = await handle<{ profile: UserProfile }>(res);
   return data.profile;
 }
+export async function syncNeonSession(sessionToken: string): Promise<AuthResponse> {
+  const res = await fetch(`${getApiBase()}/api/auth/neon-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionToken }),
+  });
+  const data = await handle<AuthResponse>(res);
+  storeSession(data.token, data.phone);
+  return data;
+}
