@@ -49,9 +49,45 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
+// --- Advanced "Software Firewall" Middleware ---
+const firewall = (req: Request, res: Response, next: NextFunction) => {
+  // 1. Block suspicious patterns in URL/Query (SQLi/XSS Detection)
+  const suspicious = /<script|select\s+.*\s+from|union\s+select|insert\s+into|delete\s+from|drop\s+table/i;
+  const urlToCheck = decodeURIComponent(req.originalUrl);
+  
+  if (suspicious.test(urlToCheck)) {
+    console.warn(`[firewall] Blocked suspicious request from ${req.ip}: ${req.originalUrl}`);
+    return res.status(403).json({ error: 'Security violation detected' });
+  }
+
+  // 2. Enforce strict request timeout (Slowloris protection)
+  res.setTimeout(15000, () => {
+    res.status(408).json({ error: 'Request timeout' });
+  });
+
+  // 3. Block unusual/suspicious User-Agents
+  const ua = req.headers['user-agent'] || '';
+  if (ua.includes('sqlmap') || ua.includes('nikto') || ua.includes('dirbuster')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  next();
+};
+
+app.use(firewall);
+
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https://*"],
+        connectSrc: ["'self'", "https://api.groq.com", "https://*.onrender.com"]
+      }
+    },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
@@ -60,12 +96,10 @@ app.use(
 // Monitor performance
 app.use((req, res, next) => {
   const start = Date.now();
-  // We can't set headers in 'finish' because they are already sent.
-  // Instead, we just log slow requests.
   res.on('finish', () => {
     const duration = Date.now() - start;
-    if (duration > 500) {
-      console.warn(`[slow] ${req.method} ${req.path} took ${duration}ms`);
+    if (duration > 800) {
+      console.warn(`[perf] ${req.method} ${req.path} took ${duration}ms`);
     }
   });
   next();
@@ -79,10 +113,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (!IS_PROD) return cb(null, true);
-      if (allowedOrigins.length === 0) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      // Allow same-origin (no origin header) or listed origins
+      if (!origin || !IS_PROD || allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error('Not allowed by CORS'));
     },
     credentials: true,
