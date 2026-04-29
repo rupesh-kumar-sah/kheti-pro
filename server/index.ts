@@ -641,7 +641,7 @@ if (IS_PROD) {
     index: false
   }));
   
-  app.get('(.*)', (req, res, next) => {
+  app.get(/.*/, (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
     // Don't cache index.html — always revalidate
     res.setHeader('Cache-Control', 'no-cache');
