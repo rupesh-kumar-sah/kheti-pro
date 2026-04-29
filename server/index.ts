@@ -699,8 +699,8 @@ app.use((req, res, next) => {
 });
 
 // Start listening immediately to avoid ECONNREFUSED from proxy
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`[server] Port ${PORT} opened. Initializing database...`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[server] Port ${PORT} opened on 0.0.0.0. Initializing database...`);
   
   initSchema()
     .then(() => {
