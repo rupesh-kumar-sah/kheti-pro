@@ -113,8 +113,24 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow same-origin (no origin header) or listed origins
-      if (!origin || !IS_PROD || allowedOrigins.includes(origin)) return cb(null, true);
+      // 1. Allow same-origin (no origin header)
+      // 2. Allow everything in development
+      if (!origin || !IS_PROD) return cb(null, true);
+      
+      // 3. Allow if origin is explicitly listed
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      
+      // 4. Auto-allow Render/Replit subdomains if no specific origins are set
+      const isAutoAllowed = allowedOrigins.length === 0 && (
+        origin.endsWith('.onrender.com') || 
+        origin.endsWith('.replit.dev') || 
+        origin.endsWith('.replit.app')
+      );
+      
+      if (isAutoAllowed) return cb(null, true);
+
+      // Log failure to help the user identify the correct origin to add
+      console.warn(`[cors] Blocked origin: ${origin}. Add this to ALLOWED_ORIGINS if needed.`);
       return cb(new Error('Not allowed by CORS'));
     },
     credentials: true,
