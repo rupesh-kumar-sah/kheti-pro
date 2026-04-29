@@ -42,6 +42,16 @@ export async function requestPermission(): Promise<Permission> {
   }
 }
 
+/**
+ * Ensure browser permission is granted. If already granted, resolves immediately.
+ * If denied, returns 'denied'. Otherwise prompts the user.
+ */
+export async function ensurePermission(): Promise<Permission> {
+  const current = getPermission();
+  if (current === 'granted' || current === 'denied' || current === 'unsupported') return current;
+  return requestPermission();
+}
+
 export function hasAskedPermission(): boolean {
   try {
     return !!localStorage.getItem(PERMISSION_REQUESTED_KEY);
@@ -86,7 +96,7 @@ export function notify(opts: NotifyOptions): boolean {
     new window.Notification(opts.title, {
       body: opts.body,
       tag: opts.tag,
-      icon: opts.icon,
+      icon: opts.icon ?? '/icons/icon-192.png',
     });
     if (opts.oncePerDay) markShownToday(opts.tag);
     return true;
@@ -104,7 +114,7 @@ export function pickDailyTip(): string {
 export function maybeShowDailyTip(prefs: NotificationPreferences): void {
   if (!prefs.dailyTips) return;
   notify({
-    title: 'KhetiSmart — Daily Tip',
+    title: 'KhetiSmart — Daily Tip 🌱',
     body: pickDailyTip(),
     tag: 'daily-tip',
     oncePerDay: true,
@@ -117,7 +127,7 @@ export function maybeShowWeatherAlert(
 ): void {
   if (!prefs.weatherAlerts || !alert) return;
   notify({
-    title: `Weather Alert: ${alert.title}`,
+    title: `⛈️ Weather Alert: ${alert.title}`,
     body: alert.message,
     tag: 'weather-alert',
     oncePerDay: true,
@@ -127,7 +137,7 @@ export function maybeShowWeatherAlert(
 export function maybeShowMarketUpdate(prefs: NotificationPreferences, summary: string): void {
   if (!prefs.marketPrices) return;
   notify({
-    title: 'Market prices updated',
+    title: '📈 Market prices updated',
     body: summary,
     tag: 'market-update',
     oncePerDay: true,
@@ -137,18 +147,24 @@ export function maybeShowMarketUpdate(prefs: NotificationPreferences, summary: s
 export function maybeShowSchemeUpdate(prefs: NotificationPreferences): void {
   if (!prefs.schemeUpdates) return;
   notify({
-    title: 'Govt. Schemes',
+    title: '🏛️ Govt. Schemes',
     body: 'Check the Profile tab for active subsidies and schemes for this season.',
     tag: 'scheme-update',
     oncePerDay: true,
   });
 }
 
+/**
+ * Called by App.tsx whenever preferences change.
+ * If any notification type is enabled AND permission is not yet granted (but not denied),
+ * we silently request permission so the user sees the browser prompt.
+ */
 export async function syncPermissionWithPreferences(prefs: NotificationPreferences): Promise<Permission> {
   const wantsAny =
     prefs.weatherAlerts || prefs.marketPrices || prefs.schemeUpdates || prefs.dailyTips;
   const perm = getPermission();
   if (!wantsAny) return perm;
   if (perm === 'granted' || perm === 'denied' || perm === 'unsupported') return perm;
+  // permission is 'default' and user wants at least one notification — ask now
   return requestPermission();
 }

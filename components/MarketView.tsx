@@ -61,36 +61,29 @@ const HistorySkeleton = () => (
 
 // --- Chart Component ---
 
-const SparklineChart: React.FC<{ data: HistoricalPrice[]; currencySymbol: string }> = ({ data, currencySymbol }) => {
+const SparklineChart = React.memo(({ data, currencySymbol }: { data: HistoricalPrice[]; currencySymbol: string }) => {
   if (data.length < 2) return <div className="text-xs text-gray-400 text-center py-4">Not enough data for chart</div>;
 
   const prices = data.map(d => d.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   
-  // Create a viewbox of 100x40
   const width = 100;
   const height = 40;
   
-  // Calculate range with padding
   const range = maxPrice - minPrice || 1;
-  const paddingY = range * 0.2; // 20% padding top/bottom
+  const paddingY = range * 0.2;
   const effectiveMin = Math.max(0, minPrice - paddingY);
   const effectiveMax = maxPrice + paddingY;
   const effectiveRange = effectiveMax - effectiveMin;
 
   const points = data.map((d, i) => {
     const x = (i / (data.length - 1)) * width;
-    // Invert Y because SVG origin is top-left
     const y = height - ((d.price - effectiveMin) / effectiveRange) * height;
     return `${x},${y}`;
   }).join(' ');
 
-  const areaPoints = `
-    0,${height} 
-    ${points} 
-    ${width},${height}
-  `;
+  const areaPoints = `0,${height} ${points} ${width},${height}`;
 
   return (
     <div className="w-full mt-4">
@@ -106,9 +99,7 @@ const SparklineChart: React.FC<{ data: HistoricalPrice[]; currencySymbol: string
        </div>
        
        <div className="h-16 w-full relative">
-         {/* Min/Max Guidelines */}
          <div className="absolute top-0 left-0 w-full h-full border-t border-b border-dashed border-gray-100 dark:border-gray-700 pointer-events-none"></div>
-         
          <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="overflow-visible">
             <defs>
                <linearGradient id="gradient" x1="0" x2="0" y1="0" y2="1">
@@ -117,17 +108,7 @@ const SparklineChart: React.FC<{ data: HistoricalPrice[]; currencySymbol: string
                </linearGradient>
             </defs>
             <path d={`M${areaPoints}Z`} fill="url(#gradient)" />
-            <polyline 
-                points={points} 
-                fill="none" 
-                stroke="#10B981" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                vectorEffect="non-scaling-stroke" 
-            />
-            
-            {/* Markers for start and end */}
+            <polyline points={points} fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             {data.length > 0 && (
                 <>
                     <circle cx="0" cy={height - ((data[0].price - effectiveMin) / effectiveRange) * height} r="3" fill="#10B981" />
@@ -138,7 +119,171 @@ const SparklineChart: React.FC<{ data: HistoricalPrice[]; currencySymbol: string
        </div>
     </div>
   );
-};
+});
+
+const MarketItemCard = React.memo(({ 
+  item, 
+  currencySymbol, 
+  displayPrice, 
+  isExpanded, 
+  isLoadingHistory, 
+  historyData, 
+  prediction, 
+  isLoadingPrediction,
+  onToggleHistory, 
+  onPredict,
+  onCloseHistory,
+  getSentiment
+}: { 
+  item: MarketItem; 
+  currencySymbol: string;
+  displayPrice: string | number;
+  isExpanded: boolean;
+  isLoadingHistory: boolean;
+  historyData?: HistoricalPrice[];
+  prediction?: string;
+  isLoadingPrediction: boolean;
+  onToggleHistory: (item: MarketItem) => void;
+  onPredict: (item: MarketItem) => void;
+  onCloseHistory: () => void;
+  getSentiment: (text: string) => 'up' | 'down' | 'neutral';
+}) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
+    <div className="flex justify-between items-start">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-[10px] px-2 py-0.5 rounded-sm font-semibold uppercase tracking-wide ${
+            item.category === 'Vegetable' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+            item.category === 'Fruit' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+            item.category === 'Grain' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+            item.category === 'Pulse' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+            item.category === 'Spice' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+            'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+          }`}>
+            {item.category}
+          </span>
+        </div>
+        {item.nameNepali ? (
+          <>
+            <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight">
+              {item.nameNepali}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.name}</p>
+          </>
+        ) : (
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">{item.name}</h3>
+        )}
+      </div>
+      <div className="text-right">
+        <p className="font-bold text-primary text-xl">
+          {currencySymbol} {displayPrice}
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">per {item.unit}</p>
+      </div>
+    </div>
+
+    <div className="mt-4 flex items-center justify-between border-t border-gray-50 dark:border-gray-700 pt-3">
+      <span className={`flex items-center text-xs font-medium px-2 py-1 rounded-full ${
+          item.trend === 'up' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' :
+          item.trend === 'down' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' :
+          'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+      }`}>
+          {item.trend === 'up' && <TrendingUp size={12} className="mr-1" />}
+          {item.trend === 'down' && <TrendingDown size={12} className="mr-1" />}
+          {item.trend === 'stable' && <Minus size={12} className="mr-1" />}
+          {item.trend === 'up' ? 'Rising' : item.trend === 'down' ? 'Falling' : 'Stable'}
+      </span>
+      
+      <div className="flex gap-2">
+          <button 
+              onClick={() => onToggleHistory(item)}
+              className={`flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition ${
+                  isExpanded 
+                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+          >
+              <History size={14} className="mr-1" />
+              {isExpanded ? 'Close' : 'History'}
+          </button>
+          
+          <button 
+              onClick={() => onPredict(item)}
+              disabled={isLoadingPrediction}
+              className={`flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition ${
+                  prediction 
+                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                  : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+              }`}
+          >
+              {isLoadingPrediction ? (
+                  <Loader2 size={14} className="animate-spin mr-1" />
+              ) : (
+                  <Sparkles size={14} className="mr-1" />
+              )}
+              Forecast
+          </button>
+      </div>
+    </div>
+
+    {/* History Section */}
+    {isExpanded && (
+      <div className="mt-3 border-t border-gray-50 dark:border-gray-700 pt-3 animate-in fade-in slide-in-from-top-2">
+          <div className="flex justify-between items-center mb-2">
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price Trend (7 Days)</h4>
+              <button onClick={onCloseHistory} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                  <X size={14} />
+              </button>
+          </div>
+          {isLoadingHistory ? (
+              <HistorySkeleton />
+          ) : historyData && historyData.length > 0 ? (
+              <SparklineChart 
+                  data={historyData} 
+                  currencySymbol={currencySymbol}
+              />
+          ) : (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-400 italic">Historical data unavailable for this item.</p>
+              </div>
+          )}
+      </div>
+    )}
+
+    {/* Prediction Section */}
+    {isLoadingPrediction ? (
+        <PredictionSkeleton />
+    ) : prediction && (
+      <div className="mt-3 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-800 border border-purple-100 dark:border-purple-800 p-4 rounded-xl text-sm animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
+        <div className="flex items-center justify-between mb-2 relative z-10">
+          <div className="flex items-center gap-2">
+              <div className="bg-purple-100 dark:bg-purple-900 p-1 rounded text-purple-600 dark:text-purple-300">
+                  <Sparkles size={14} />
+              </div>
+              <p className="font-semibold text-xs text-purple-800 dark:text-purple-300 uppercase tracking-wider">AI Forecast</p>
+          </div>
+          
+          {getSentiment(prediction) === 'up' && (
+              <span className="flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  <TrendingUp size={14} className="mr-1" /> Rising
+              </span>
+          )}
+          {getSentiment(prediction) === 'down' && (
+              <span className="flex items-center text-xs font-bold text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded-full border border-red-200 dark:border-red-800">
+                  <TrendingDown size={14} className="mr-1" /> Falling
+              </span>
+          )}
+        </div>
+        
+        <div className="relative z-10 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+          {prediction}
+        </div>
+        
+        <div className="absolute top-0 right-0 w-16 h-16 bg-purple-100 dark:bg-purple-800/30 rounded-full blur-2xl -mr-8 -mt-8 opacity-50"></div>
+      </div>
+    )}
+  </div>
+));
 
 const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
   const [marketItems, setMarketItems] = useState<MarketItem[]>([]);
@@ -447,146 +592,24 @@ const MarketView: React.FC<MarketViewProps> = ({ notificationPrefs }) => {
       ) : (
         <div className="space-y-4">
              {filteredItems.map((item) => (
-                <div key={item.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-sm font-semibold uppercase tracking-wide ${
-                          item.category === 'Vegetable' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                          item.category === 'Fruit' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                          item.category === 'Grain' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
-                          item.category === 'Pulse' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
-                          item.category === 'Spice' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                          'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                        }`}>
-                          {item.category}
-                        </span>
-                      </div>
-                      {item.nameNepali ? (
-                        <>
-                          <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight">
-                            {item.nameNepali}
-                          </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.name}</p>
-                        </>
-                      ) : (
-                        <h3 className="font-bold text-gray-800 dark:text-gray-100 text-lg">{item.name}</h3>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary text-xl">
-                        {currencySymbol} {getDisplayPrice(item.price)}
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">per {item.unit}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-gray-50 dark:border-gray-700 pt-3">
-                    <span className={`flex items-center text-xs font-medium px-2 py-1 rounded-full ${
-                        item.trend === 'up' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' :
-                        item.trend === 'down' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                    }`}>
-                        {item.trend === 'up' && <TrendingUp size={12} className="mr-1" />}
-                        {item.trend === 'down' && <TrendingDown size={12} className="mr-1" />}
-                        {item.trend === 'stable' && <Minus size={12} className="mr-1" />}
-                        {item.trend === 'up' ? 'Rising' : item.trend === 'down' ? 'Falling' : 'Stable'}
-                    </span>
-                    
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={() => handleToggleHistory(item)}
-                            className={`flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition ${
-                                expandedHistory === item.id 
-                                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
-                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                        >
-                            <History size={14} className="mr-1" />
-                            {expandedHistory === item.id ? 'Close' : 'History'}
-                        </button>
-                        
-                        <button 
-                            onClick={() => handlePredict(item)}
-                            disabled={loadingPrediction[item.id]}
-                            className={`flex items-center text-xs font-medium px-3 py-1.5 rounded-lg transition ${
-                                predictions[item.id] 
-                                ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                                : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                            }`}
-                        >
-                            {loadingPrediction[item.id] ? (
-                                <Loader2 size={14} className="animate-spin mr-1" />
-                            ) : (
-                                <Sparkles size={14} className="mr-1" />
-                            )}
-                            Forecast
-                        </button>
-                    </div>
-                  </div>
-
-                  {/* History Section */}
-                  {expandedHistory === item.id && (
-                    <div className="mt-3 border-t border-gray-50 dark:border-gray-700 pt-3 animate-in fade-in slide-in-from-top-2">
-                        <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price Trend (7 Days)</h4>
-                            <button onClick={() => setExpandedHistory(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                <X size={14} />
-                            </button>
-                        </div>
-                        {loadingHistory[item.id] ? (
-                            <HistorySkeleton />
-                        ) : historyData[item.id] && historyData[item.id].length > 0 ? (
-                            <SparklineChart 
-                                data={historyData[item.id].map(h => ({
-                                    ...h,
-                                    price: currency === 'USD' ? Number((h.price * exchangeRate).toFixed(2)) : h.price
-                                }))} 
-                                currencySymbol={currencySymbol}
-                            />
-                        ) : (
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
-                                <p className="text-xs text-gray-400 italic">Historical data unavailable for this item.</p>
-                            </div>
-                        )}
-                    </div>
-                  )}
-
-                  {/* Prediction Section */}
-                  {loadingPrediction[item.id] ? (
-                      <PredictionSkeleton />
-                  ) : predictions[item.id] && (
-                    <div className="mt-3 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-800 border border-purple-100 dark:border-purple-800 p-4 rounded-xl text-sm animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
-                      <div className="flex items-center justify-between mb-2 relative z-10">
-                        <div className="flex items-center gap-2">
-                            <div className="bg-purple-100 dark:bg-purple-900 p-1 rounded text-purple-600 dark:text-purple-300">
-                                <Sparkles size={14} />
-                            </div>
-                            <p className="font-semibold text-xs text-purple-800 dark:text-purple-300 uppercase tracking-wider">AI Forecast</p>
-                        </div>
-                        
-                        {/* Sentiment Indicator (Pill) */}
-                        {getPredictionSentiment(predictions[item.id]) === 'up' && (
-                            <span className="flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                <TrendingUp size={14} className="mr-1" /> Rising
-                            </span>
-                        )}
-                        {getPredictionSentiment(predictions[item.id]) === 'down' && (
-                            <span className="flex items-center text-xs font-bold text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded-full border border-red-200 dark:border-red-800">
-                                <TrendingDown size={14} className="mr-1" /> Falling
-                            </span>
-                        )}
-                      </div>
-                      
-                      <div className="relative z-10 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                        {predictions[item.id]}
-                      </div>
-                      
-                      {/* Decorative bg element */}
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-purple-100 dark:bg-purple-800/30 rounded-full blur-2xl -mr-8 -mt-8 opacity-50"></div>
-                    </div>
-                  )}
-                </div>
+                <MarketItemCard 
+                    key={item.id}
+                    item={item}
+                    currencySymbol={currencySymbol}
+                    displayPrice={getDisplayPrice(item.price)}
+                    isExpanded={expandedHistory === item.id}
+                    isLoadingHistory={loadingHistory[item.id]}
+                    historyData={historyData[item.id]?.map(h => ({
+                        ...h,
+                        price: currency === 'USD' ? Number((h.price * exchangeRate).toFixed(2)) : h.price
+                    }))}
+                    prediction={predictions[item.id]}
+                    isLoadingPrediction={loadingPrediction[item.id]}
+                    onToggleHistory={handleToggleHistory}
+                    onPredict={handlePredict}
+                    onCloseHistory={() => setExpandedHistory(null)}
+                    getSentiment={getPredictionSentiment}
+                />
               ))}
         </div>
       )}

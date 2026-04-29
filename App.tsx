@@ -6,10 +6,10 @@ import LoginView from './components/LoginView';
 import InstallPrompt from './components/InstallPrompt';
 
 const MarketView = lazy(() => import('./components/MarketView'));
-const DoctorView = lazy(() => import('./components/DoctorView'));
+const FarmAndDoctorView = lazy(() => import('./components/FarmAndDoctorView'));
 const GuideView = lazy(() => import('./components/GuideView'));
 const ProfileView = lazy(() => import('./components/ProfileView'));
-const FarmingView = lazy(() => import('./components/FarmingView'));
+const CommunityView = lazy(() => import('./components/CommunityView'));
 import { ViewState, UserProfile } from './types';
 import {
   fetchMe,
@@ -34,6 +34,7 @@ const DEFAULT_PROFILE: UserProfile = {
   location: 'Nepal',
   experienceYears: 0,
   crops: [],
+  tasks: [],
   darkMode: false,
   biometricLogin: false,
   preferences: {
@@ -138,12 +139,24 @@ function App() {
     userProfile.preferences.dailyTips,
   ]);
 
-  // Persist profile updates to the database
+  const profileSaveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Persist profile updates to the database with 1s debouncing
   const handleProfileUpdate = (updatedProfile: UserProfile) => {
+    // 1. Update UI state immediately (Optimistic UI)
     setUserProfile(updatedProfile);
-    saveProfile(updatedProfile).catch((err) => {
-      console.error('Failed to save profile', err);
-    });
+
+    // 2. Clear pending save
+    if (profileSaveTimeoutRef.current) {
+      clearTimeout(profileSaveTimeoutRef.current);
+    }
+
+    // 3. Schedule save after 1 second of inactivity
+    profileSaveTimeoutRef.current = setTimeout(() => {
+      saveProfile(updatedProfile).catch((err) => {
+        console.error('Background profile save failed:', err);
+      });
+    }, 1000);
   };
 
   const handleLoginSuccess = (profile: UserProfile, phone: string) => {
@@ -186,11 +199,11 @@ function App() {
           />
         );
       case 'farming':
-        return <FarmingView />;
+        return <FarmAndDoctorView userId={currentUserId} />;
       case 'market':
         return <MarketView notificationPrefs={userProfile.preferences} />;
-      case 'doctor':
-        return <DoctorView userId={currentUserId} />;
+      case 'community':
+        return <CommunityView userId={currentUserId} />;
       case 'profile':
         return <ProfileView profile={userProfile} onUpdate={handleProfileUpdate} onLogout={handleLogout} />;
       default:

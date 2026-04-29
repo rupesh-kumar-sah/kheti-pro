@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Loader2, Sprout, CloudSun, Droplets, Calendar, BookOpen, ChevronRight } from 'lucide-react';
+import { Search, Loader2, Sprout, CloudSun, Droplets, Calendar, BookOpen, ChevronRight, Mic, X, Download, Share2, Sparkles, MessageSquare } from 'lucide-react';
 import { getFarmingGuide } from '../services/aiService';
 import RichText from './RichText';
 
@@ -8,21 +8,48 @@ const FarmingView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [guide, setGuide] = useState<string | null>(null);
   const [searchedCrop, setSearchedCrop] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
   const handleSearch = async (term?: string) => {
     const searchTerm = term || query;
     if (!searchTerm.trim()) return;
     
-    // Update input if searched via suggestion
     if (term) setQuery(term);
 
     setLoading(true);
     setGuide(null);
     setSearchedCrop(searchTerm);
     
-    const result = await getFarmingGuide(searchTerm);
-    setGuide(result);
-    setLoading(false);
+    try {
+      const result = await getFarmingGuide(searchTerm);
+      setGuide(result);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice search is not supported in this browser.');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ne-NP'; // Nepali
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      const text = event.results[0][0].transcript;
+      setQuery(text);
+      handleSearch(text);
+    };
+
+    recognition.start();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -44,23 +71,35 @@ const FarmingView: React.FC = () => {
       </div>
 
       {/* Search Input */}
-      <div className="mb-6 relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter crop name (e.g. Tomato, Rice)..."
-          className="w-full pl-12 pr-4 py-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white shadow-sm transition-all"
-        />
-        <Search className="absolute left-4 top-4.5 text-gray-400" size={20} />
-        <button 
-            onClick={() => handleSearch()}
-            disabled={loading || !query.trim()}
-            className="absolute right-2 top-2 bg-primary text-white p-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <ChevronRight size={20} />}
-        </button>
+      <div className="mb-8 relative px-2">
+        <div className="relative group">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter crop name (Tomato, Rice)..."
+              className="w-full pl-12 pr-24 py-5 rounded-[2rem] bg-white dark:bg-gray-800 border-2 border-transparent shadow-xl shadow-blue-500/5 focus:border-blue-500 transition-all outline-none text-[15px] font-medium dark:text-white"
+            />
+            <Search className="absolute left-4 top-5 text-gray-300 group-focus-within:text-blue-500 transition-colors" size={22} />
+            
+            <div className="absolute right-3 top-2.5 flex items-center gap-1">
+                <button 
+                  onClick={startVoiceSearch}
+                  className={`p-2.5 rounded-full transition ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-50 dark:bg-gray-700 text-gray-500 hover:text-blue-500'}`}
+                  title="Voice Search (Nepali)"
+                >
+                  <Mic size={20} />
+                </button>
+                <button 
+                    onClick={() => handleSearch()}
+                    disabled={loading || !query.trim()}
+                    className="bg-blue-600 text-white p-2.5 rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg shadow-blue-500/20"
+                >
+                    {loading ? <Loader2 size={20} className="animate-spin" /> : <ChevronRight size={20} />}
+                </button>
+            </div>
+        </div>
       </div>
 
       {/* Quick Suggestions */}
@@ -102,25 +141,56 @@ const FarmingView: React.FC = () => {
 
       {/* Result Card */}
       {guide && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="bg-primary/10 dark:bg-emerald-900/30 p-4 border-b border-primary/10 dark:border-emerald-800/50 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <Sprout size={20} className="text-primary dark:text-emerald-400" />
-                    <h3 className="font-bold text-lg text-primary dark:text-emerald-400 capitalize">{searchedCrop} Farming</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl shadow-blue-500/5 border border-gray-100 dark:border-gray-700/50 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                        <Sprout size={24} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="font-black text-xl text-white capitalize leading-tight">{searchedCrop}</h3>
+                        <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest opacity-80">Full Farming Guide</p>
+                    </div>
                 </div>
                 <div className="flex gap-2">
-                     <span className="bg-white dark:bg-gray-800 p-1.5 rounded-full text-blue-500" title="Weather Info"><CloudSun size={16} /></span>
-                     <span className="bg-white dark:bg-gray-800 p-1.5 rounded-full text-blue-400" title="Irrigation"><Droplets size={16} /></span>
-                     <span className="bg-white dark:bg-gray-800 p-1.5 rounded-full text-orange-500" title="Season"><Calendar size={16} /></span>
+                     <button className="bg-white/20 p-2 rounded-xl text-white hover:bg-white/30 transition"><Share2 size={18} /></button>
+                     <button className="bg-white text-blue-600 p-2 rounded-xl hover:bg-blue-50 transition shadow-lg"><Download size={18} /></button>
                 </div>
             </div>
             
-            <div className="p-6">
-                <RichText text={guide} className="text-gray-700 dark:text-gray-200" />
+            <div className="p-8">
+                <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar pb-2">
+                    <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-2xl shrink-0">
+                        <Droplets size={16} className="text-emerald-500" />
+                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Water Aware</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 px-4 py-2 rounded-2xl shrink-0">
+                        <Calendar size={16} className="text-orange-500" />
+                        <span className="text-xs font-bold text-orange-700 dark:text-orange-300">Seasonal</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-2xl shrink-0">
+                        <Sparkles size={16} className="text-purple-500" />
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300">AI Verified</span>
+                    </div>
+                </div>
+
+                <div className="prose dark:prose-invert max-w-none">
+                    <RichText text={guide} className="text-gray-700 dark:text-gray-200 leading-relaxed text-[15px]" />
+                </div>
+                
+                <div className="mt-8 pt-8 border-t border-gray-50 dark:border-gray-700/50 flex flex-col items-center">
+                    <div className="flex items-center gap-2 text-gray-400 mb-4">
+                        <MessageSquare size={14} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Ask for more details</span>
+                    </div>
+                    <button className="text-blue-500 font-black text-xs uppercase tracking-widest hover:text-blue-600 transition">
+                        Open Expert Chat
+                    </button>
+                </div>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-t border-gray-100 dark:border-gray-700 text-center">
-                <p className="text-xs text-gray-400">Generated by KhetiSmart AI • Consult local experts for commercial farming</p>
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 text-center">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">© KhetiSmart 2026 • Premium Agricultural Data</p>
             </div>
         </div>
       )}

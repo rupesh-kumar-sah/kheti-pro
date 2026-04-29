@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ViewState } from '../types';
-import { Home, TrendingUp, Camera, User, BookOpen } from 'lucide-react';
+import { Home, TrendingUp, BookOpen, MessageSquare, User } from 'lucide-react';
 
 interface NavigationProps {
   currentView: ViewState;
@@ -13,7 +13,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'home', label: 'Home', icon: Home },
     { id: 'farming', label: 'Farming', icon: BookOpen },
     { id: 'market', label: 'Market', icon: TrendingUp },
-    { id: 'doctor', label: 'Doctor', icon: Camera },
+    { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

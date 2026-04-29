@@ -1,13 +1,13 @@
-// KhetiSmart Service Worker
-// Enables offline support and faster repeat loads.
+// KhetiSmart Service Worker v2
 // Strategy:
-//   - App shell (HTML/JS/CSS/fonts/icons): stale-while-revalidate
-//   - /api/* (own server): network-first with short cache fallback
-//   - Gemini & external APIs: bypass (handled by app-level localStorage cache)
+//   - App shell (HTML/JS/CSS/icons): cache-first (instant loads)
+//   - /api/* (own server): network-first with 3s timeout, fallback to cache
+//   - Cross-origin: skip (handled by app)
 
-const VERSION = 'v1.0.0';
+const VERSION = 'v2.0.0';
 const SHELL_CACHE = `khetismart-shell-${VERSION}`;
-const API_CACHE = `khetismart-api-${VERSION}`;
+const API_CACHE   = `khetismart-api-${VERSION}`;
+const API_TIMEOUT = 3000; // ms — fail fast to cached data
 
 const SHELL_ASSETS = [
   '/',
@@ -17,6 +17,7 @@ const SHELL_ASSETS = [
   '/icons/icon-512.png',
 ];
 
+// ── Install: pre-cache shell assets ────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE)
@@ -25,6 +26,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// ── Activate: clean old caches ─────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -37,57 +39,73 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// ── Fetch handler ──────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
 
-  // Skip cross-origin requests (Gemini, weather, fonts CDN, Tailwind CDN, etc.)
-  // Those are either cached at the app layer or we always want fresh.
+  // Skip cross-origin
   if (url.origin !== self.location.origin) return;
 
-  // Don't intercept Vite HMR / dev websockets
+  // Skip Vite HMR in dev
   if (url.pathname.startsWith('/@vite') || url.pathname.startsWith('/@react-refresh')) return;
 
-  // API: network-first, fall back to cache for resilience
+  // API: network-first with timeout for instant fallback
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(req, API_CACHE));
+    event.respondWith(networkFirstWithTimeout(req, API_CACHE, API_TIMEOUT));
     return;
   }
 
-  // Everything else (HTML, JS, CSS, icons): stale-while-revalidate
-  event.respondWith(staleWhileRevalidate(req, SHELL_CACHE));
+  // Shell assets: cache-first (instant load, background update)
+  event.respondWith(cacheFirstWithUpdate(req, SHELL_CACHE));
 });
 
-async function networkFirst(req, cacheName) {
+// ── Cache-first + background revalidate (fastest for shell) ────────
+async function cacheFirstWithUpdate(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+  
+  // Background update (don't await)
+  const networkPromise = fetch(req)
+    .then((res) => {
+      if (res && res.ok) cache.put(req, res.clone()).catch(() => {});
+      return res;
+    })
+    .catch(() => null);
+
+  if (cached) return cached;
+  
+  // No cache — wait for network
+  const fresh = await networkPromise;
+  return fresh || new Response('Offline', { status: 503 });
+}
+
+// ── Network-first with timeout (fast fail to cache) ────────────────
+async function networkFirstWithTimeout(req, cacheName, timeoutMs) {
+  const cache = await caches.open(cacheName);
+  
   try {
-    const fresh = await fetch(req);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    const fresh = await fetch(req, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
     if (fresh && fresh.ok) {
-      const cache = await caches.open(cacheName);
       cache.put(req, fresh.clone()).catch(() => {});
     }
     return fresh;
   } catch (err) {
-    const cached = await caches.match(req);
+    // Timeout or network error — serve from cache
+    const cached = await cache.match(req);
     if (cached) return cached;
     throw err;
   }
 }
 
-async function staleWhileRevalidate(req, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(req);
-  const network = fetch(req)
-    .then((res) => {
-      if (res && res.ok) cache.put(req, res.clone()).catch(() => {});
-      return res;
-    })
-    .catch(() => cached);
-  return cached || network;
-}
-
-// Allow the page to trigger an immediate activation after a new SW is installed
+// ── Message handler for skip waiting ───────────────────────────────
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, NotificationPreferences } from '../types';
-import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare, Navigation, Loader2, BellRing } from 'lucide-react';
+import { User, MapPin, Sprout, Clock, Edit3, Save, X, Camera, Plus, Bell, CloudRain, TrendingUp, FileText, Sun, Landmark, ChevronDown, ChevronUp, Calendar, ExternalLink, Users, Moon, Fingerprint, LogOut, HelpCircle, MessageSquare, Navigation, Loader2, BellRing, CheckSquare } from 'lucide-react';
 import {
   detectLocation,
   getLocation,
@@ -13,6 +13,7 @@ import {
 import {
   getPermission,
   requestPermission,
+  ensurePermission,
   notify,
   Permission,
 } from '../services/notificationService';
@@ -27,6 +28,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UserProfile>(profile);
   const [newCrop, setNewCrop] = useState('');
+  const [newTask, setNewTask] = useState('');
   const [expandedSchemeId, setExpandedSchemeId] = useState<number | null>(null);
   const [expandedFaqId, setExpandedFaqId] = useState<number | null>(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -133,6 +135,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
   const handleCancel = () => {
     setFormData(profile);
     setNewCrop('');
+    setNewTask('');
     setIsEditing(false);
   };
 
@@ -156,52 +159,99 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
     }));
   };
   
-  const handleToggleDarkMode = () => {
-    const updated = { ...formData, darkMode: !formData.darkMode };
-    setFormData(updated);
-    // If not editing, apply immediately
-    if (!isEditing) {
-      onUpdate(updated);
+  const handleAddTask = () => {
+    if (newTask.trim()) {
+      if (!(formData.tasks || []).includes(newTask.trim())) {
+         setFormData(prev => ({
+           ...prev,
+           tasks: [...(prev.tasks || []), newTask.trim()]
+         }));
+      }
+      setNewTask('');
     }
   };
 
-  const handleToggleBiometric = () => {
-    if (!formData.biometricLogin) {
-      // Turning ON: Show scan simulation to "save" biometrics
-      setShowBiometricModal(true);
-      setTimeout(() => {
-        setShowBiometricModal(false);
-        // Generate a unique Biometric ID for this user session (Simulating a secure token)
-        const uniqueBioId = `bio_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        
-        // Simulating hardware secure storage on the device
-        try {
-          localStorage.setItem('khetismart_device_biometric_id', uniqueBioId);
-        } catch (e) {
-          console.error("Failed to save biometric ID to device", e);
-        }
-
-        const updated = { 
-          ...formData, 
-          biometricLogin: true,
-          biometricId: uniqueBioId // Link this ID to the user profile
-        };
-        setFormData(updated);
-        if (!isEditing) onUpdate(updated);
-      }, 2000);
+  const handleRemoveTask = (taskToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tasks: (prev.tasks || []).filter(t => t !== taskToRemove)
+    }));
+  };
+  
+  const handleToggleDarkMode = () => {
+    const next = !formData.darkMode;
+    const updated = { ...formData, darkMode: next };
+    setFormData(updated);
+    onUpdate(updated); 
+    
+    // Persist locally for the HTML blocking script
+    try {
+      localStorage.setItem('khetismart_dark_mode', next.toString());
+    } catch (e) {}
+    
+    if (next) {
+      document.documentElement.classList.add('dark');
     } else {
-      // Turning OFF: Remove the ID and flag
-      
-      // Remove credential from device
-      localStorage.removeItem('khetismart_device_biometric_id');
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
-      const updated = { 
-        ...formData, 
-        biometricLogin: false,
-        biometricId: undefined 
-      };
+  const [biometricWorking, setBiometricWorking] = useState(false);
+
+  const handleToggleBiometric = async () => {
+    if (formData.biometricLogin) {
+      // Turn OFF — remove stored credential
+      try { localStorage.removeItem('khetismart_device_biometric_id'); } catch {}
+      const updated = { ...formData, biometricLogin: false, biometricId: undefined };
       setFormData(updated);
-      if (!isEditing) onUpdate(updated);
+      onUpdate(updated);
+      return;
+    }
+
+    // Turn ON — use WebAuthn if available, else fallback
+    setBiometricWorking(true);
+    try {
+      if (window.PublicKeyCredential) {
+        // Real WebAuthn registration
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge,
+            rp: { name: 'KhetiSmart', id: window.location.hostname },
+            user: {
+              id: new TextEncoder().encode(formData.name || 'farmer'),
+              name: formData.name || 'farmer',
+              displayName: formData.name || 'Farmer',
+            },
+            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+            timeout: 60000,
+            authenticatorSelection: {
+              userVerification: 'preferred',
+              residentKey: 'discouraged',
+            },
+          },
+        }) as PublicKeyCredential | null;
+
+        if (credential) {
+          const uniqueBioId = `webauthn_${credential.id}`;
+          try { localStorage.setItem('khetismart_device_biometric_id', uniqueBioId); } catch {}
+          const updated = { ...formData, biometricLogin: true, biometricId: uniqueBioId };
+          setFormData(updated);
+          onUpdate(updated);
+        }
+      } else {
+        // Fallback: device doesn't support WebAuthn
+        alert('Biometric login is not supported on this device/browser. Please use a device with fingerprint or face unlock.');
+      }
+    } catch (err: any) {
+      if (err?.name !== 'NotAllowedError') {
+        // NotAllowedError = user cancelled — don't show error
+        console.error('WebAuthn error', err);
+        alert('Could not set up biometric login: ' + (err?.message || 'Unknown error'));
+      }
+    } finally {
+      setBiometricWorking(false);
     }
   };
 
@@ -512,6 +562,75 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                     )}
                 </div>
 
+                {/* My Tasks Section */}
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div className="flex items-center gap-2 mb-3">
+                        <CheckSquare size={18} className="text-primary dark:text-emerald-400" />
+                        <h3 className="font-bold text-gray-800 dark:text-white">My Tasks</h3>
+                    </div>
+                    
+                    {isEditing ? (
+                        <div className="space-y-4">
+                            {/* Task List for Deletion */}
+                             <div className="space-y-2">
+                                {(formData.tasks || []).map((task, index) => (
+                                    <div key={index} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700">
+                                        <span className="flex-1 mr-2 break-words">{task}</span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleRemoveTask(task)}
+                                            className="text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition shrink-0"
+                                            aria-label={`Remove task`}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Add New Task Input */}
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text"
+                                    value={newTask}
+                                    onChange={(e) => setNewTask(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddTask();
+                                        }
+                                    }}
+                                    placeholder="Add a new farming task..."
+                                    className="flex-1 p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+                                    aria-label="Add new task"
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={handleAddTask}
+                                    disabled={!newTask.trim()}
+                                    className="bg-primary text-white p-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                    aria-label="Add task"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {(formData.tasks || []).length > 0 ? (
+                                (formData.tasks || []).map((task, index) => (
+                                    <div key={index} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        <CheckSquare size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                                        <span>{task}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <span className="text-gray-400 text-sm italic">No tasks listed yet.</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Settings & Notifications Container */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
                     
@@ -544,20 +663,28 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                             <div className="p-2 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                 <Fingerprint size={16} />
                             </div>
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Biometric Login</span>
+                            <div>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Biometric Login</span>
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {window.PublicKeyCredential ? 'Uses device fingerprint / Face ID' : 'Not supported on this device'}
+                              </p>
+                            </div>
                         </div>
-                        <button 
+                        <button
                             type="button"
                             onClick={handleToggleBiometric}
-                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
+                            disabled={biometricWorking || !window.PublicKeyCredential}
+                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 disabled:opacity-40 ${
                                 formData.biometricLogin ? 'bg-primary' : 'bg-gray-300'
                             }`}
                             aria-label="Toggle Biometric Login"
                             aria-pressed={formData.biometricLogin}
                         >
-                            <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                                formData.biometricLogin ? 'translate-x-5' : 'translate-x-0'
-                            }`} />
+                            {biometricWorking
+                              ? <div className="w-4 h-4 rounded-full bg-white animate-pulse" />
+                              : <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                                  formData.biometricLogin ? 'translate-x-5' : 'translate-x-0'
+                              }`} />}
                         </button>
                     </div>
 
@@ -575,15 +702,30 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                                     </div>
                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
                                 </div>
-                                <button 
+                                <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={async () => {
+                                        const turningOn = !formData.preferences[key];
+                                        // If turning ON, ensure browser permission is granted first
+                                        if (turningOn) {
+                                          const perm = await ensurePermission();
+                                          setNotifPermission(perm);
+                                          if (perm === 'denied') {
+                                            setNotifFeedback('Notifications are blocked. Go to browser Site Settings to allow them.');
+                                            return; // don't toggle if blocked
+                                          }
+                                          if (perm === 'unsupported') {
+                                            setNotifFeedback('Your browser does not support notifications.');
+                                            return;
+                                          }
+                                        }
                                         const updated = {
                                             ...formData,
                                             preferences: { ...formData.preferences, [key]: !formData.preferences[key] }
                                         };
                                         setFormData(updated);
-                                        if (!isEditing) onUpdate(updated);
+                                        onUpdate(updated); // always persist immediately
+                                        if (turningOn) setNotifFeedback(null);
                                     }}
                                     className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
                                         formData.preferences[key] ? 'bg-primary' : 'bg-gray-300'
@@ -599,7 +741,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                         ))}
                     </div>
 
-                    {/* Permission status + test */}
+                    {/* Browser permission status + actions */}
                     <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                             <span className="text-gray-500 dark:text-gray-400">Browser permission</span>
@@ -610,14 +752,23 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                                     ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                             }`}>
-                                {notifPermission === 'granted' && 'Allowed'}
-                                {notifPermission === 'denied' && 'Blocked'}
+                                {notifPermission === 'granted' && '✓ Allowed'}
+                                {notifPermission === 'denied' && '✗ Blocked'}
                                 {notifPermission === 'default' && 'Not asked yet'}
                                 {notifPermission === 'unsupported' && 'Unsupported'}
                             </span>
                         </div>
+
+                        {/* Blocked state: show how to fix */}
+                        {notifPermission === 'denied' && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-xs text-red-700 dark:text-red-300 leading-relaxed">
+                                <p className="font-semibold mb-1">Notifications are blocked by your browser.</p>
+                                <p>To fix: click the 🔒 lock icon in your browser address bar → <strong>Notifications</strong> → set to <strong>Allow</strong> → reload the page.</p>
+                            </div>
+                        )}
+
                         <div className="flex gap-2">
-                            {notifPermission !== 'granted' && notifPermission !== 'unsupported' && (
+                            {notifPermission !== 'granted' && notifPermission !== 'unsupported' && notifPermission !== 'denied' && (
                                 <button
                                     type="button"
                                     onClick={handleEnableNotifications}
@@ -626,16 +777,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({ profile, onUpdate, onLogout }
                                     <Bell size={14} /> Enable notifications
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                onClick={handleTestNotification}
-                                className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-1"
-                            >
-                                <BellRing size={14} /> Send test
-                            </button>
+                            {notifPermission === 'granted' && (
+                                <button
+                                    type="button"
+                                    onClick={handleTestNotification}
+                                    className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-1"
+                                >
+                                    <BellRing size={14} /> Send test notification
+                                </button>
+                            )}
                         </div>
                         {notifFeedback && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{notifFeedback}</p>
+                            <p className={`text-xs ${
+                              notifFeedback.includes('blocked') || notifFeedback.includes('blocked')
+                                ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+                            }`}>{notifFeedback}</p>
                         )}
                     </div>
                 </div>

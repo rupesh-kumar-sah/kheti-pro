@@ -1,17 +1,18 @@
 {
   "name": "KhetiSmart - Nepali Farming AI",
   "short_name": "KhetiSmart",
-  "description": "AI-powered farming companion for Nepal: weather, market prices, crop diagnosis, and Nepali farming guides.",
+  "description": "AI-powered farming companion for Nepal: weather, market prices, crop diagnosis, community, and Nepali farming guides.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#10B981",
   "theme_color": "#10B981",
   "orientation": "portrait-primary",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["agriculture", "productivity", "utilities"],
+  "categories": ["agriculture", "productivity", "utilities", "social"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -34,10 +35,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Crop Doctor",
-      "short_name": "Doctor",
-      "description": "Diagnose crop diseases from a photo",
-      "url": "/?tab=doctor"
+      "name": "Farming Guide & Doctor",
+      "short_name": "Farming",
+      "description": "Crop guides and disease diagnosis",
+      "url": "/?tab=farming"
     },
     {
       "name": "Market Prices",
@@ -46,10 +47,10 @@
       "url": "/?tab=market"
     },
     {
-      "name": "Farming Guide",
-      "short_name": "Guide",
-      "description": "Crop-by-crop farming guides in Nepali",
-      "url": "/?tab=farming"
+      "name": "Community",
+      "short_name": "Community",
+      "description": "Share farming thoughts with other farmers",
+      "url": "/?tab=community"
     }
   ]
 }

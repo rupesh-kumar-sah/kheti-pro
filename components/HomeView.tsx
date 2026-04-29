@@ -78,9 +78,9 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat, userName, noti
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => setView('market')}
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300"
+            className="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300 active:scale-95"
           >
-            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3">
+            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
               <TrendingUp className="text-primary dark:text-emerald-400" size={24} />
             </div>
             <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Market Prices</span>
@@ -89,9 +89,9 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat, userName, noti
 
           <button 
             onClick={() => setView('doctor')}
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300"
+            className="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300 active:scale-95"
           >
-            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3">
+            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
               <Camera className="text-primary dark:text-emerald-400" size={24} />
             </div>
             <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Crop Doctor</span>
@@ -100,9 +100,9 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat, userName, noti
 
           <button 
             onClick={onOpenChat}
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300"
+            className="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300 active:scale-95"
           >
-            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3">
+            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
               <MessageCircle className="text-primary dark:text-emerald-400" size={24} />
             </div>
             <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Farming Guide</span>
@@ -110,14 +110,14 @@ const HomeView: React.FC<HomeViewProps> = ({ setView, onOpenChat, userName, noti
           </button>
 
           <button 
-            onClick={() => {}} 
-            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300 opacity-60"
+            onClick={() => setView('community')} 
+            className="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:bg-emerald-50 dark:hover:bg-gray-700 transition duration-300 active:scale-95"
           >
-            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full mb-3">
-              <Sprout className="text-gray-500 dark:text-gray-400" size={24} />
+            <div className="bg-emerald-100 dark:bg-emerald-900/40 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+              <Sprout className="text-primary dark:text-emerald-400" size={24} />
             </div>
-            <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">My Crops</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Coming Soon</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Community</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Farmer Feed</span>
           </button>
         </div>
       </div>

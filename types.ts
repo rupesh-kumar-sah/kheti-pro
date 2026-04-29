@@ -1,5 +1,5 @@
 
-export type ViewState = 'home' | 'farming' | 'market' | 'doctor' | 'guide' | 'profile';
+export type ViewState = 'home' | 'farming' | 'market' | 'community' | 'guide' | 'profile';
 
 export interface WeatherData {
   temp: number;
@@ -49,6 +49,7 @@ export interface UserProfile {
   location: string;
   experienceYears: number;
   crops: string[];
+  tasks: string[];
   darkMode: boolean;
   biometricLogin: boolean;
   biometricId?: string; // Unique ID for specific biometric credential
@@ -70,4 +71,16 @@ export interface UserAccount {
 
 export interface UserMap {
   [phone: string]: UserAccount;
+}
+
+export interface Post {
+  id: string;
+  user_id: string;
+  author_name: string;
+  content: string;
+  created_at: string;
+  is_draft: boolean;
+  updated_at?: string;
+  likes_count?: number;
+  is_liked?: boolean;
 }

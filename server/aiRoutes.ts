@@ -27,6 +27,30 @@ function getGroq(): Groq | null {
   return new Groq({ apiKey });
 }
 
+// ── Cache Layer ──────────────────────────────────────────────────
+interface CacheEntry {
+  data: any;
+  expiry: number;
+}
+const aiCache = new Map<string, CacheEntry>();
+
+function getCache(key: string): any | null {
+  const entry = aiCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    aiCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key: string, data: any, ttlSeconds: number): void {
+  aiCache.set(key, {
+    data,
+    expiry: Date.now() + ttlSeconds * 1000,
+  });
+}
+
 function aiUnavailable(res: Response) {
   console.error("Missing Groq API Key");
   return res.status(500).json({ error: 'AI service not configured' });
@@ -40,8 +64,8 @@ async function completionWithRetry(
 ): Promise<string> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const completion = await groq.chat.completions.create(options);
-      return completion.choices[0]?.message?.content || '';
+      const completion = await groq.chat.completions.create({ ...options, stream: false });
+      return (completion as any).choices[0]?.message?.content || '';
     } catch (err: any) {
       const status = err?.status;
       const errMsg = err?.error?.error?.message || err?.message || '';
@@ -110,6 +134,10 @@ export function createAiRouter(): Router {
     if (!groq) return aiUnavailable(res);
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
+    const cacheKey = `guide_${cropName}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json({ text: cached });
+
     try {
       const prompt = `
 Provide a detailed, step-by-step farming guide for "${cropName}" specifically for Nepal.
@@ -122,10 +150,11 @@ Include the following sections clearly:
 3. Soil Preparation (जमिनको तयारी)
 4. Sowing Method (रोप्ने तरिका)
 5. Irrigation & Fertilizer (सिँचाइ र मलखाद)
-6. Harvesting (बाली भित्र्याउने)
+6. Harvesting (बाली भर्याउने)
 
 Format using Markdown with bold headings. Keep it practical and easy for a farmer to understand.`;
       const text = await chat(groq, [{ role: 'user', content: prompt }]);
+      setCache(cacheKey, text, 86400); // 24h cache
       return res.json({ text });
     } catch (err) {
       console.error('farming-guide error', err);
@@ -183,11 +212,16 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
     if (!groq) return aiUnavailable(res);
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
+    const cacheKey = `predict_${cropName}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json({ text: cached });
+
     try {
       const text = await completionWithRetry(groq, {
         model: MODEL_FAST,
         messages: [{ role: 'user', content: `Predict the market trend for ${cropName} in Kathmandu over the next week based on typical seasonal trends. Brief (max 50 words).` }],
       });
+      setCache(cacheKey, text, 86400); // 24h cache
       return res.json({ text });
     } catch (err) {
       console.error('market-prediction error', err);
@@ -199,6 +233,10 @@ Format using Markdown with bold headings. Keep it practical and easy for a farme
   router.get('/market-prices', async (_req: Request, res: Response) => {
     const groq = getGroq();
     if (!groq) return aiUnavailable(res);
+    const cacheKey = 'market_prices_v1';
+    const cached = getCache(cacheKey);
+    if (cached) return res.json({ items: cached, sources: [] });
+
     try {
       const prompt = `
 Generate a comprehensive list of current typical Nepal market retail/wholesale prices for the Kathmandu region.
@@ -222,18 +260,18 @@ Use realistic Nepal market prices. Output RAW JSON ONLY. No markdown fences, no 
         model: MODEL_FAST,
         messages: [{ role: 'user', content: prompt }],
       });
-      console.log('Groq response received. Length:', text.length);
       
       let items: any[] = [];
       try {
         items = JSON.parse(cleanJson(text));
-        console.log('Successfully parsed', items.length, 'items');
+        if (items.length > 0) {
+          setCache(cacheKey, items, 3600); // 1h cache
+        }
       } catch (e) {
-        console.error('market-prices JSON parse error. Raw text starts with:', text.substring(0, 200));
+        console.error('market-prices JSON parse error');
       }
       
       if (!items || items.length === 0) {
-        console.log('Returning fallback market data');
         items = [
           { id: 'potato', name: 'Potato', nameNepali: 'आलु', price: 45, unit: 'kg', trend: 'stable', category: 'Vegetable' },
           { id: 'tomato', name: 'Tomato', nameNepali: 'गोलभेडा', price: 60, unit: 'kg', trend: 'up', category: 'Vegetable' },
@@ -256,6 +294,10 @@ Use realistic Nepal market prices. Output RAW JSON ONLY. No markdown fences, no 
     if (!groq) return aiUnavailable(res);
     const cropName: string = (req.body?.cropName || '').toString().slice(0, 80);
     if (!cropName.trim()) return res.status(400).json({ error: 'cropName required' });
+    const cacheKey = `history_${cropName}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json({ items: cached });
+
     try {
       const prompt = `
 Generate typical wholesale price history for ${cropName} in Kathmandu (Kalimati) for the last 7 days.
@@ -269,6 +311,9 @@ No markdown.`;
       let history: any[] = [];
       try {
         history = JSON.parse(cleanJson(text));
+        if (history.length > 0) {
+          setCache(cacheKey, history, 86400); // 24h cache
+        }
       } catch (e) {
         console.error('historical-prices JSON parse error', e);
       }
